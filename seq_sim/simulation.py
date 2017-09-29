@@ -391,7 +391,7 @@ class Population():
                                                                              pos=pos,
                                                                              to=j[1],
                                                                              seq=i,
-                                                                             patient=self.sim.name)
+                                                                             patient=self.sim.settings['name'])
         print string
 
     def get_sample(self, sample_size):

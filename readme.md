@@ -30,7 +30,7 @@ simulation settings can be set by
 see `help(seq_sim.Simulation)` for all possible settings
 
 ### run a simulation
-    for gen in nr_gen:
+    for gen in range(nr_gen):
 	    sim.new_generation()
 
 ### get output

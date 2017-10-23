@@ -74,7 +74,7 @@ class Simulation(object):
 
     initialisation parameters:
         * **model**: model to use for the MFED (otions: 'neutral'(default),\
-        'lognormal','exponential','spikes','beta')
+        'lognormal','exponential','spikes','beta', 'from_data','steps')
         * **parameters**: dict containing appropriate parameters for the MFED
         * **mut_rate**: mutation rate per site per generation (default = 2.16e-5)
         * **subs_matrix**:         
@@ -221,12 +221,16 @@ class Simulation(object):
         elif self.settings['model'] == 'from_data':
             for i, j in zip(to_fill[0], to_fill[1]):
                 index = np.random.randint(len(self.settings['parameters']['values']))
-                new_number = np.random.normal(self.settings['parameters']['values'][index],
-                                              self.settings['parameters']['SD'][index])
+                if self.settings['parameters']['SD'][index] == 0:
+                    new_number = self.settings['parameters']['values'][index]
+                else:
+                    new_number = np.random.normal(self.settings['parameters']['values'][index],
+                                                  self.settings['parameters']['SD'][index])
                 if new_number >= 0:
                     fitness[i,j] = new_number
                 else:
                     fitness[i,j] = 0
+                    
         return fitness
 
     def get_fitness_effect(self, location, target_base):

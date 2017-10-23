@@ -6,7 +6,7 @@ Created on Tue Jul 11 15:13:13 2017
 @author: eva
 """
 import optparse
-import simulation as sim
+import seq_sim as sim
 
 
 def passaging():

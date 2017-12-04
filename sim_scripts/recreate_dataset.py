@@ -88,7 +88,7 @@ def recreate_dataset(sample_sizes,nr_mutations,apobec,model=None,parameters=None
                     elif action == 'shared_stats':
                         stats_here.add(this_patient.current_gen,sample,e)
                     elif action == 'n_generations':
-                        print i
+                        #print i
                         n_gen.append(i)
                     break
                 else:

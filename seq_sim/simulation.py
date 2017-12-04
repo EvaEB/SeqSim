@@ -18,8 +18,8 @@ import progressbar
 
 class Seq(object):
     '''
-    Create a random sequence. 
-    
+    Create a random sequence.
+
     Keyword arguments:
 
     * seq_len: int, length of the sequence to simulate
@@ -35,14 +35,14 @@ class Seq(object):
             self.sequence = self.translate_sequence(seq)
             self.len = len(seq)
 
-        
+
 
     def __str__(self):
         seq = ''
         for i in self.sequence:
             seq += self.translation[i]
         return seq
-    
+
     def __len__(self):
         return self.len
 
@@ -77,8 +77,9 @@ class Simulation(object):
         'lognormal','exponential','spikes','beta', 'from_data','steps')
         * **parameters**: dict containing appropriate parameters for the MFED
         * **mut_rate**: mutation rate per site per generation (default = 2.16e-5)
-        * **subs_matrix**:         
+        * **subs_matrix**:
         * **seq_len**: length of sequence to simulate (default 2600), used if \
+        no sequence is provided
         * **basedist**: list of cumulutive distribution of bases used for \
         generating the sequence in order [A,G,T,C]. (default: [0.25,0.5,0.75,1])
         * **R0**: initial average amount of offspring per sequence
@@ -89,26 +90,26 @@ class Simulation(object):
         * **fitness_table**
         * **n_seq_init**
     '''
-    
+
     def __init__(self, simulation_settings='HIV', **kwargs):
-        
+
         try:
             with open(simulation_settings) as f:
                 self.settings = yaml.safe_load(f)
         except IOError:
-            path = os.path.dirname(os.path.abspath(inspect.stack()[0][1])) 
+            path = os.path.dirname(os.path.abspath(inspect.stack()[0][1]))
             with open(path+'/simulation_settings/'+simulation_settings) as f:
                 self.settings = yaml.safe_load(f)
         except TypeError:
             self.settings = simulation_settings
-        
+
         for key, value in kwargs.iteritems():
             self.settings[key] = value
-        
-        
-        
+
+
+
         self.settings['subs_matrix'] = np.array(self.settings['subs_matrix'])
-        
+
         #adapt mutation rate for APOBEC increase in G-to-A mutations
         self.mut_rate = sum([(self.settings['subs_matrix'][1][1]*self.settings['mut_rate']),
                              ((1-self.settings['subs_matrix'][1][1])*self.settings['ga_increase']*
@@ -119,7 +120,7 @@ class Simulation(object):
         else:
             self.sequence = self.settings['sequence']
             self.settings['seq_len'] = self.sequence.len
-        
+
         if 'fitness_table' not in self.settings.keys():
             if self.settings['model'] == 'exponential':
                 for par in ['fl','fd','fb']:
@@ -132,14 +133,14 @@ class Simulation(object):
             self.fitness_table = self.__getfitness_table()
         else:
             self.fitness_table = self.settings['fitness_table']
-        
+
         self.settings['max_pop'] = int(self.settings['max_pop'])
-        
+
         self.gen = 0
         self.average_fitness= 1
         self.effective_pop = 1
         self.n_seq = self.settings['n_seq_init']
-        
+
         if 'pop' not in self.settings.keys():
             self.current_gen = Population(self, n_seq=int(self.settings['n_seq_init']))
         else:
@@ -149,10 +150,10 @@ class Simulation(object):
         #                            [1,1001,0,0],
         #                            [2,20,2,0]])
 
-        
+
         self.mutations_per_seq = self.new_mutations_per_seq()
-        
-        
+
+
     def new_mutations_per_seq(self):
         return iter(np.random.binomial(self.sequence.len,self.settings['mut_rate'],1000))
 
@@ -182,7 +183,7 @@ class Simulation(object):
 
         if self.settings['model'] == 'neutral': #neutral model
             fitness = np.ones((4, seq_len))
-        elif self.settings['model'] == 'exponential': #lethals+beneficials+deleterious 
+        elif self.settings['model'] == 'exponential': #lethals+beneficials+deleterious
             for i, j in zip(to_fill[0], to_fill[1]):
                 randnr = random.random()
                 if randnr < self.settings['parameters']['fl']:
@@ -195,7 +196,7 @@ class Simulation(object):
                     fitness[i,j] = 1-np.random.exponential(self.settings['parameters']['ld'])
                 if fitness[i,j] < 0:
                     fitness[i,j] = 0
-                    
+
         elif self.settings['model']  == 'spikes':
             n_spikes = (len(self.settings['parameters']['loc']))
 
@@ -230,12 +231,12 @@ class Simulation(object):
                     fitness[i,j] = new_number
                 else:
                     fitness[i,j] = 0
-                    
+
         return fitness
 
     def get_fitness_effect(self, location, target_base):
         return self.fitness_table[target_base,location]
-        
+
     def get_nr_offspring(self, sequence_id, return_fitness=False):
         """returns the number of offspring of a sequence according to the fitness
         of that sequence"""
@@ -248,7 +249,7 @@ class Simulation(object):
         if return_fitness:
             return np.random.poisson(fitness*R0), fitness
         return np.random.poisson(fitness*R0)
-    
+
     def mutate_seq(self, pop, seq_id):
         """mutates a sequence (with existing mutations) of length N, according to
         the per base mutation rate"""
@@ -259,17 +260,17 @@ class Simulation(object):
             nr_mut = self.mutations_per_seq.next()
         if nr_mut>0:
             success_mut = 0
-    
+
             while success_mut < nr_mut: #do the mutations one by one
                 where = random.randrange(0, self.sequence.len) #draw where the mutation will take place
                 base = self.current_gen.get_base(seq_id, where)
                 rand_nr = random.random() #draw a random nr for base substitution
-    
+
                 to_check = self.settings['subs_matrix'][int(base), :] #get the cumulative distribution
                                                             #of base substitutions
                 new_base = np.where(to_check > rand_nr)[0][0] #find the new base
                 if base != new_base:
-    
+
                     if (base == 1) and (new_base == 0): #G-A mutations
                         if (self.settings['ga_increase']> 1) or (random.random() < self.settings['ga_increase']):
                             pop.add_change(seq_id, where, new_base)
@@ -304,10 +305,10 @@ class Simulation(object):
 
         #reduce population to max_pop
         #if len(all_offspring) > self.max_pop:
-        
+
         if sum(weights) > self.settings['max_pop']:
             #reduce the population randomly to max_pop
-            all_offspring = sorted(np.random.choice(range(self.current_gen.n_seq), 
+            all_offspring = sorted(np.random.choice(range(self.current_gen.n_seq),
                                                     size=int(self.settings['max_pop']),
                                                     p=np.array(weights,dtype=float)/sum(weights)))
         else:
@@ -323,7 +324,7 @@ class Simulation(object):
 
             self.mutate_seq(new_generation, seq_id)
 
-        
+
         if new_generation.n_seq == 0:
             print 'died out'
             n_gen = self.gen
@@ -341,7 +342,7 @@ class Simulation(object):
         if n_seq == 0: #original state
             return Simulation(self.settings, sequence = self.sequence,fitness_table=self.fitness_table)
         else:
-            simcopy = Simulation(self.settings, sequence = self.sequence,fitness_table=self.fitness_table, 
+            simcopy = Simulation(self.settings, sequence = self.sequence,fitness_table=self.fitness_table,
                                  name= name, n_seq_init=n_seq)
             sample = self.current_gen.get_sample(n_seq)
             for i,s in enumerate(sample):
@@ -350,7 +351,7 @@ class Simulation(object):
                     for c in changes:
                         simcopy.current_gen.add_change(i,c[0],c[1])
             return simcopy
-                        
+
 
 
 class Population():
@@ -381,7 +382,7 @@ class Population():
                                                                              seq=i,
                                                                              patient=self.sim.settings['name'])
         return string
-    
+
     def copy(self):
         return Population(self.sim,self.changes,self.changed,self.n_seq)
 
@@ -403,9 +404,9 @@ class Population():
             return np.random.choice(self.n_seq,size=sample_size,replace=False)
         except ValueError:
             return range(self.n_seq)
-            
-    
-            
+
+
+
 
     def add_sequence(self, changes=None):
         self.n_seq += 1
@@ -497,16 +498,14 @@ class Population():
 
 
 if __name__ == '__main__':
-    times = []
-    seq = Seq(seq='A'*5386)
-    parameters = {'fl':0.2, 'fb':0.29, 'lb':0.03,'fd':0.51,'ld':0.21}
-    test = Simulation('phix174',sequence=seq, model='exponential',parameters=parameters)#,model='neutral', seq_len=500,mutrate=0.1)
-    print test.settings['parameters']
-    import matplotlib.pyplot as plt
-    plt.hist(test.fitness_table[1,:])
-    #for i in range(10):
-    #    test.new_generation()
-    
-    #test2 = test.copy('2',n_seq=3)
-    #print test2
-    #print test.current_gen.stats()
+    import sys
+
+    settings = sys.argv[1]
+    n_gen = int(sys.argv[2])
+
+    sim = Simulation(settings)
+
+    for i in range(n_gen):
+        sim.new_generation()
+
+    print sim

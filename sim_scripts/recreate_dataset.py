@@ -53,9 +53,12 @@ class stats(object):
 
 
 
-def recreate_dataset(sample_sizes,nr_mutations,apobec,model,parameters,
-                     apobec_rate,action='print'):
-    simul = sim.Simulation(simulation_settings='HIV',model=model,parameters=parameters)
+def recreate_dataset(sample_sizes,nr_mutations,apobec,model=None,parameters=None,
+                     apobec_rate=1,action='print',simulation_settings='HIV'):
+    if model is not None:
+        simul = sim.Simulation(simulation_settings,model=model,parameters=parameters)
+    else:
+        simul = sim.Simulation(simulation_settings)
     previous = 0
     if action == 'shared_stats':
         stats_here = stats()
@@ -63,8 +66,7 @@ def recreate_dataset(sample_sizes,nr_mutations,apobec,model,parameters,
         n_gen = []
     for e, sample_size in enumerate(sample_sizes):
         this_patient = simul.copy(name=e)
-
-        for i in range(50):
+        for i in range(150):
             this_patient.new_generation()
             if apobec[e] == 1:
                 this_patient.ga_increase = apobec_rate
@@ -96,7 +98,7 @@ def recreate_dataset(sample_sizes,nr_mutations,apobec,model,parameters,
                     elif action == 'shared_stats':
                         stats_here.add(previous_gen,old_sample,e)
                     elif action == 'n_generations':
-                        print i
+                        #print i
                         n_gen.append(i)
                     break
             else:
@@ -110,30 +112,30 @@ def recreate_dataset(sample_sizes,nr_mutations,apobec,model,parameters,
 
 
 if __name__ == '__main__':
-    sample_sizes = [58] #'33 37 25 25 49 24 39 30 23 62 42 42 50 57 36 46 45 39 25 18 11 14 17 11 31 20 26 20 18 27 21 30 47 53 40 45 27 28 35 19 13 36 26 17 25 34 22 18 23 19 23 21 18 20 39 20 22 23 26 54 42 46 32 14 19 27 24 32 21 31 29 19 40 38 36 29 32 35 27 16 28 20 67 29 42 43 16 21 15 30 26 15 25 17 10 21 18 17'.split(' ')
-    sample_sizes = [int(i) for i in sample_sizes]
+    import sys
+    settings = sys.argv[1]
+    patient_file = sys.argv[2]
+    action = sys.argv[3] #print, shared_stats or n_generations
+    apobec_rate = sys.argv[4]
 
-    nr_mutations = [20] #'17 29 19 20 36 10 17 14 15 44 12 23 40 20 14 15 35 38 17 7 6 7 8 4 7 24 10 9 8 24 4 15 38 31 28 28 18 11 30 10 4 11 6 9 14 7 8 12 14 9 5 10 11 15 11 12 5 9 11 27 15 23 44 10 20 12 11 12 13 25 13 1 14 23 29 13 13 11 13 12 9 5 31 13 21 33 11 13 10 40 14 6 22 31 5 16 10 17'.split(' ')
+    with open(patient_file) as f:
+        patients = f.readlines()
+
+    nr_mutations = patients[1].strip().split(' ')
     nr_mutations = [int(i) for i in nr_mutations]
 
-    apobec = [1]#'1 1 0 0 1 0 0 0 0 1 0 0 1 1 0 0 1 1 1 0 0 0 0 0 0 1 0 0 1 1 0 0 0 0 1 1 0 0 1 0 0 0 0 0 0 0 1 0 0 0 0 1 0 1 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0'.split(' ')
+    sample_sizes = patients[3].strip().split(' ')
+    sample_sizes = [int(i) for i in sample_sizes]
+
+    apobec = patients[5].strip().split(' ')
     apobec = [int(i) for i in apobec]
 
-    model = 'exponential'
-    parameters = {'fb':0.2, 'lb':0.6, 'fn':0.8}
-    #apobec_rate = np.exp(1.830)
-    #model = 'lognormal'
-    #parameters = {'fl':0.045,'mu':-0.248, 'sigma':0.149}
-    #model = 'neutral'
-    #parameters = {}
-    apobec_rate = 10.621
-
-    action = 'n_generations'
-
-    for rep in range(1):
-        print rep
-        times_since_infection  = recreate_dataset(sample_sizes,nr_mutations,apobec,model,parameters,
-                                              apobec_rate,action=action)
-
-        print '12 (8-16) \t 19 (9, 28)'
-        #pickle.dump(stats_final,open('/home/eva/polybox/PhD/FED/SMC/best_fit_sims/lognormal_new/stats_{}.npy'.format(rep),'w'))
+    simulation  = recreate_dataset(sample_sizes,nr_mutations,apobec,
+                                   apobec_rate=apobec_rate,
+                                   action=action,
+                                   simulation_settings=settings)
+    if action == 'shared_stats': #todo: prettier print
+        for i in simulation:
+            print i
+    if action == 'n_generations':
+        print simulation

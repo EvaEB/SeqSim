@@ -340,9 +340,11 @@ class Simulation(object):
     def copy(self, name, n_seq = 0):
         '''create a deep copy of the simulation'''
         if n_seq == 0: #original state
-            return Simulation(self.settings, sequence = self.sequence,fitness_table=self.fitness_table)
+            return Simulation(self.settings, sequence = self.sequence,
+                              fitness_table=self.fitness_table,name=name)
         else:
-            simcopy = Simulation(self.settings, sequence = self.sequence,fitness_table=self.fitness_table,
+            simcopy = Simulation(self.settings, sequence = self.sequence,
+                                 fitness_table=self.fitness_table,
                                  name= name, n_seq_init=n_seq)
             sample = self.current_gen.get_sample(n_seq)
             for i,s in enumerate(sample):

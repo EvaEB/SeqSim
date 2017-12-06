@@ -7,6 +7,7 @@ Created on Tue Jul 11 15:13:13 2017
 """
 import optparse
 import seq_sim as sim
+from tqdm import tqdm
 
 
 # def passaging(settings,n_gen=50,initial_size=1,max_size=1e5,transfer_size=0.005,
@@ -42,14 +43,21 @@ class passaging(sim.Simulation):
         self.transfer_time = transfer_time
 
 
-    def passage(self,n_passage):
+    def passage(self,n_passage,progressbar=False):
+        if progressbar:
+            bar = tqdm(range(n_passage))
+
         for i in range(n_passage):
             for j in range(self.transfer_time-1):
                 self.new_generation()
+                if progressbar:
+                    bar.update()
             self.settings['max_pop'] = max(2,self.transfer_prop*self.current_gen.n_seq)
             self.new_generation()
             self.settings['max_pop'] = self.max_size
-
+            
+        if progressbar:
+            bar.close()
 
 
 if __name__ ==  '__main__':
@@ -102,6 +110,6 @@ if __name__ ==  '__main__':
     phage_sim = passaging(options.settings,options.initial_size,options.max_size,
                           float(options.transfer_prop),options.transfer_time)
 
-    phage_sim.passage(100)
+    phage_sim.passage(100,progressbar=True)
 
     print phage_sim

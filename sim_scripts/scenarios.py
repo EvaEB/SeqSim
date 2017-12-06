@@ -1,0 +1,80 @@
+from virus_passaging import passaging
+
+import matplotlib.pyplot as plt
+import numpy
+import time
+
+def update_line(fig,line, x,y):
+    line.set_xdata(numpy.append(line.get_xdata(), x))
+    line.set_ydata(numpy.append(line.get_ydata(), y))
+    fig.canvas.draw()
+    fig.canvas.flush_events()
+
+class progress_plot():
+    def __init__(self):
+        plt.ion()
+        self.fig = plt.figure()
+        self.ax1 = self.fig.add_subplot(2,2,1)
+        self.ax2 = self.fig.add_subplot(2,2,2)
+        self.ax3 = self.fig.add_subplot(2,2,3)
+        self.ax4 = self.fig.add_subplot(2,2,4)
+
+        self.hl, = self.ax1.plot([],[])
+        self.ax1.set_title('population size')
+
+        self.frac, = self.ax2.plot([],[])
+        self.ax2.set_title('maximum fraction of a mutation')
+
+        self.mut, = self.ax3.plot([],[])
+        self.ax3.set_title('total mutations')
+
+        self.unique, = self.ax4.plot([],[])
+        self.ax4.set_title('unique mutations')
+
+    def update_plot(self,time,sim):
+        update_line(self.fig,self.hl,time,sim.current_gen.n_seq)
+
+        stats = sim.current_gen.stats()
+        update_line(self.fig,self.frac,time,stats['max_fraction'])
+        update_line(self.fig,self.mut,time,stats['total_mutations'])
+        update_line(self.fig,self.unique,time,stats['unique_mutations'])
+
+        self.ax1.relim()
+        self.ax1.autoscale_view()
+        self.ax2.relim()
+        self.ax2.autoscale_view()
+        self.ax3.relim()
+        self.ax3.autoscale_view()
+        self.ax4.relim()
+        self.ax4.autoscale_view()
+
+def skyline(plot=False,plot_freq=1):
+    event_times = [10,          20,        30,       50,       50,        51       ]
+    events =      [('t',0.03),('t',0.02),('t',0.01),('t',0.02),('v',1e5),('t',0.01)]
+    initial_size = 1e4
+    transfer_props = 0.01
+    max_passage = 100
+    skyline = passaging('phix174', initial_size,initial_size, transfer_props,2)
+
+    if plot:
+        pp = progress_plot()
+
+
+    total_time = 0
+    for i in range(max_passage):
+        while len(event_times) > 0 and event_times[0] == i:
+            if events[0][0] == 't':
+                skyline.transfer_prop = events[0][1]
+            elif events[0][0] == 'v':
+                skyline.max_size = events[0][1]
+            del events[0]
+            del event_times[0]
+        skyline.passage(1)
+        total_time+=1
+
+        if plot and (i%plot_freq==0 or i == max_passage-1):
+            pp.update_plot(total_time, skyline)
+
+    plt.ioff()
+    plt.show()
+skyline(plot=True, plot_freq=5)

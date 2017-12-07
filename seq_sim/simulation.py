@@ -465,6 +465,7 @@ class Population():
             stats['GA_rate'] = None
         return stats
 
+
     def to_fasta(self, seq_ids=[], n_seq=1, description=''):
         string = ''
         if len(seq_ids) == 0:
@@ -498,6 +499,22 @@ class Population():
         else:
             return None
 
+    def Hamming_distance(self,simulation_settings,sample,action='mean'):
+        HDs = []
+        for i in sample:
+            for j in sample:
+                if i in self.changes.keys():
+                    changed1 = [str(k) for k in self.changes[i]]
+                else:
+                    changed1 = []
+                if j in self.changes.keys():
+                    changed2 =  [str(k) for k in self.changes[j]]
+                else: changed2 = []
+                HDs.append(len(set(list(changed1)) ^ set(list(changed2))))
+        if action == 'mean':
+            return np.mean(HDs)
+        elif action == 'Poisson_fit':
+            return np.mean(HDs)/(2*simulation_settings['mut_rate']*simulation_settings['seq_len'])
 
 if __name__ == '__main__':
     import sys
@@ -510,4 +527,4 @@ if __name__ == '__main__':
     for i in range(n_gen):
         sim.new_generation()
 
-    print sim
+    print sim.current_gen.Hamming_distance(sim.settings,sim.current_gen.get_sample(5),action='Poisson_fit')

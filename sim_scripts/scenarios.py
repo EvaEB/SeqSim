@@ -3,14 +3,11 @@ from virus_passaging import passaging
 import matplotlib.pyplot as plt
 import numpy
 import time
+import tqdm
 
-def update_line(fig,line, x,y):
-    line.set_xdata(numpy.append(line.get_xdata(), x))
-    line.set_ydata(numpy.append(line.get_ydata(), y))
-    fig.canvas.draw()
-    fig.canvas.flush_events()
 
 class progress_plot():
+
     def __init__(self):
         plt.ion()
         self.fig = plt.figure()
@@ -31,13 +28,19 @@ class progress_plot():
         self.unique, = self.ax4.plot([],[])
         self.ax4.set_title('unique mutations')
 
+    def update_line(self,fig,line, x,y):
+        line.set_xdata(numpy.append(line.get_xdata(), x))
+        line.set_ydata(numpy.append(line.get_ydata(), y))
+        fig.canvas.draw()
+        fig.canvas.flush_events()
+
     def update_plot(self,time,sim):
-        update_line(self.fig,self.hl,time,sim.current_gen.n_seq)
+        self.update_line(self.fig,self.hl,time,sim.current_gen.n_seq)
 
         stats = sim.current_gen.stats()
-        update_line(self.fig,self.frac,time,stats['max_fraction'])
-        update_line(self.fig,self.mut,time,stats['total_mutations'])
-        update_line(self.fig,self.unique,time,stats['unique_mutations'])
+        self.update_line(self.fig,self.frac,time,stats['max_fraction'])
+        self.update_line(self.fig,self.mut,time,stats['total_mutations'])
+        self.update_line(self.fig,self.unique,time,stats['unique_mutations'])
 
         self.ax1.relim()
         self.ax1.autoscale_view()
@@ -48,9 +51,9 @@ class progress_plot():
         self.ax4.relim()
         self.ax4.autoscale_view()
 
-def skyline(plot=False,plot_freq=1):
-    event_times = [10,          20,        30,       50,       50,        51       ]
-    events =      [('t',0.03),('t',0.02),('t',0.01),('t',0.02),('v',1e5),('t',0.01)]
+def skyline(plot=False,plot_freq=1,progress=False):
+    event_times =[10,20]# [10,          20,        30,       50,       50,        51       ]
+    events =     [('t',0.1),('t',0.05)]# [('t',0.03),('t',0.02),('t',0.01),('t',0.02),('v',1e5),('t',0.01)]
     initial_size = 1e4
     transfer_props = 0.01
     max_passage = 100
@@ -58,10 +61,11 @@ def skyline(plot=False,plot_freq=1):
 
     if plot:
         pp = progress_plot()
-
+    if progress:
+        prog = tqdm.tqdm(range(max_passage))
 
     total_time = 0
-    for i in range(max_passage):
+    for i in tqdm.tqdm(range(max_passage)):
         while len(event_times) > 0 and event_times[0] == i:
             if events[0][0] == 't':
                 skyline.transfer_prop = events[0][1]
@@ -77,4 +81,6 @@ def skyline(plot=False,plot_freq=1):
 
     plt.ioff()
     plt.show()
-skyline(plot=True, plot_freq=5)
+    print skyline.current_gen.to_fasta(n_seq=30)
+
+skyline(plot=True, plot_freq=5,progress=True)

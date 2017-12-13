@@ -89,7 +89,7 @@ def recreate_dataset(sample_sizes,nr_mutations,apobec,model=None,parameters=None
                         stats_here.add(this_patient.current_gen,sample,e)
                     elif action == 'n_generations':
                         #print i
-                        poisson = this_patient.current_gen.Hamming_distance(this_patient.settings,sample,action='Poisson_fit')
+                        poisson = this_patient.current_gen.Hamming_distance(this_patient.settings,sample,action='print')
                         n_gen.append([i, poisson])
                     break
                 else:
@@ -100,7 +100,7 @@ def recreate_dataset(sample_sizes,nr_mutations,apobec,model=None,parameters=None
                         stats_here.add(previous_gen,old_sample,e)
                     elif action == 'n_generations':
                         #print i
-                        poisson = previous_gen.Hamming_distance(this_patient.settings,sample,action='Poisson_fit')
+                        poisson = previous_gen.Hamming_distance(this_patient.settings,sample,action='print')
                         n_gen.append([i,poisson])
                     break
             else:

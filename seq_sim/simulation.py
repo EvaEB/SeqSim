@@ -15,6 +15,7 @@ import yaml
 import os
 import inspect
 import progressbar
+import scipy.stats as scats
 
 class Seq(object):
     '''
@@ -514,7 +515,14 @@ class Population():
         if action == 'mean':
             return np.mean(HDs)
         elif action == 'Poisson_fit':
-            return np.mean(HDs)/(2*simulation_settings['mut_rate']*simulation_settings['seq_len'])
+            poiss = np.mean(HDs)/(2*simulation_settings['mut_rate']*simulation_settings['seq_len'])
+            exp = scats.poisson.pmf(range(max(HDs)+1),np.mean(HDs))*len(HDs)
+            obs = np.histogram(HDs, bins=range(0,max(HDs)+2))[0]
+            pval =scats.chisquare(obs,exp,ddof=len(exp)-1-len(sample)).pvalue
+            if np.isnan(pval) or pval>0.05:
+                return poiss
+            else:
+                return np.nan
 
 if __name__ == '__main__':
     import sys
@@ -527,4 +535,4 @@ if __name__ == '__main__':
     for i in range(n_gen):
         sim.new_generation()
 
-    print sim.current_gen.Hamming_distance(sim.settings,sim.current_gen.get_sample(5),action='Poisson_fit')
+    print sim.current_gen.Hamming_distance(sim.settings,sim.current_gen.get_sample(10),action='Poisson_fit')

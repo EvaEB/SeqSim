@@ -34,13 +34,26 @@ from tqdm import tqdm
 #     return phage_sim
 
 class passaging(sim.Simulation):
-    def __init__(self,simulation_settings,initial_size,max_size,
-                            transfer_prop,transfer_time, **kwargs):
+    def __init__(self,simulation_settings,initial_size=10e4,max_size=10e4,
+                            transfer_prop=0.05,transfer_time=2, **kwargs):
         sim.Simulation.__init__(self,simulation_settings,n_seq_init=initial_size,**kwargs)
         self.initial_size = initial_size
         self.max_size = max_size
         self.transfer_prop = transfer_prop
         self.transfer_time = transfer_time
+
+    def copy(self,name, n_seq=1):
+        new_passaging = passaging(simulation_settings=self.settings,
+                                  initial_size=0,
+                                  max_size=self.max_size,
+                                  transfer_prop=self.transfer_prop,
+                                  transfer_time=self.transfer_time)
+        new_passaging.sequence = self.sequence
+        new_passaging.fitness_table = self.fitness_table
+        for seqid in self.current_gen.get_sample(n_seq):
+            changes = self.current_gen.get_seq(seqid)
+            new_passaging.current_gen.add_sequence(changes)
+        return new_passaging
 
 
     def passage(self,n_passage,progressbar=False):
@@ -55,7 +68,7 @@ class passaging(sim.Simulation):
             self.settings['max_pop'] = max(2,self.transfer_prop*self.current_gen.n_seq)
             self.new_generation()
             self.settings['max_pop'] = self.max_size
-            
+
         if progressbar:
             bar.close()
 

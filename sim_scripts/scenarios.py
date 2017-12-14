@@ -51,18 +51,13 @@ class progress_plot():
         self.ax4.relim()
         self.ax4.autoscale_view()
 
-def skyline(plot=False,plot_freq=1,progress=False):
-    events =     [(10,'t',0.1),(20,'v',1e5)] #(time,eventtype, new value), events: t: tranfer prop change, v: total volume change
-    #event_times = [i[0] for i in events]
-    initial_size = 1e4
-    transfer_props = 0.01
-    max_passage = 100
-    skyline = passaging('phix174', initial_size,initial_size, transfer_props,2)
+def skyline(events,initial_size=1e4,transfer_props=0.01,max_passage=100,
+            gen_per_transfer=2,plot=False,plot_freq=1,progress=False)
+    skyline = passaging('phix174', initial_size,initial_size, transfer_props,
+                        gen_per_transfer)
 
     if plot:
         pp = progress_plot()
-    if progress:
-        prog = tqdm.tqdm(range(max_passage))
 
     total_time = 0
     for i in tqdm.tqdm(range(max_passage)):
@@ -83,4 +78,6 @@ def skyline(plot=False,plot_freq=1,progress=False):
     plt.show()
     print skyline.current_gen.to_fasta(n_seq=30)
 
-skyline(plot=True, plot_freq=5,progress=True)
+if __name__ == '__main__':
+    events =     [(10,'t',0.1),(20,'v',1e5)] #(time,eventtype, new value), events: t: tranfer prop change, v: total volume change
+    skyline(events, plot=True, plot_freq=5,progress=True)

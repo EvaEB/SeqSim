@@ -52,10 +52,10 @@ class progress_plot():
         self.ax4.autoscale_view()
 
 def skyline(events,initial_size=1e4,transfer_props=0.01,max_passage=100,
-            gen_per_transfer=2,plot=False,plot_freq=1,progress=False)
-    skyline = passaging('phix174', initial_size,initial_size, transfer_props,
-                        gen_per_transfer)
-
+            gen_per_transfer=2,plot=False,plot_freq=1,progress=False):
+    skyline_sim = passaging('phix174', initial_size,initial_size, transfer_props,
+                            gen_per_transfer)
+    print skyline_sim.current_gen.to_fasta(seq_ids=[0],description='consensus'),
     if plot:
         pp = progress_plot()
 
@@ -63,21 +63,74 @@ def skyline(events,initial_size=1e4,transfer_props=0.01,max_passage=100,
     for i in tqdm.tqdm(range(max_passage)):
         while len(events) > 0 and events[0][0] == i:
             if events[0][1] == 't':
-                skyline.transfer_prop = events[0][2]
+                skyline_sim.transfer_prop = events[0][2]
             elif events[0][1] == 'v':
-                skyline.max_size = events[0][2]
+                skyline_sim.max_size = events[0][2]
             del events[0]
             #del event_times[0]
-        skyline.passage(1)
+        skyline_sim.passage(1)
         total_time+=1
 
         if plot and (i%plot_freq==0 or i == max_passage-1):
-            pp.update_plot(total_time, skyline)
+            pp.update_plot(total_time, skyline_sim)
 
     plt.ioff()
     plt.show()
-    print skyline.current_gen.to_fasta(n_seq=30)
+    print skyline_sim.current_gen.to_fasta(n_seq=30)
+
+def control(initial_size=1e4,transfer_props=0.1,max_passage=100,
+            gen_per_transfer=2,plot=False,plot_freq=1,progress=False):
+    control_sim = passaging('phix174', initial_size,initial_size, transfer_props,
+                            gen_per_transfer)
+    print control_sim.current_gen.to_fasta(seq_ids=[0],description='consensus')
+    if plot:
+        pp = progress_plot()
+
+    total_time = 0
+    for i in tqdm.tqdm(range(max_passage)):
+        control_sim.passage(1)
+        total_time+=1
+
+        if plot and (i%plot_freq==0 or i == max_passage-1):
+            pp.update_plot(total_time, control_sim)
+
+    plt.ioff()
+    plt.show()
+    print control_sim.current_gen.to_fasta(n_seq=30)
+
+def migration():
+    transfer_props = [[1e-2, 0, 5e-3],
+                      [5e-3, 1e-2, 0],
+                      [5e-3, 0, 1e-2]]
+    max_passage =  100
+    n_pop = len(transfer_props)
+    n_seq_init = 1e4
+    viral_pops = [passaging('phix174',initial_size=n_seq_init,
+                            transfer_prop = transfer_props[0][0])]
+    print viral_pops[0].current_gen.to_fasta(seq_ids=[0],description='consensus')
+
+    for i in range(1,n_pop):
+        viral_pops.append(viral_pops[-1].copy(i,n_seq=n_seq_init))
+        viral_pops[-1].transfer_prop = transfer_props[i][i]
+
+    for i in tqdm.tqdm(range(max_passage)):
+        for i in viral_pops:
+            i.passage(1)
+        for i in range(n_pop):
+            for j in range(n_pop):
+                if i != j:
+                    amount = transfer_props[i][j]
+                    migration_size = int(viral_pops[j].current_gen.n_seq*amount)
+                    migrating = viral_pops[j].current_gen.get_sample(migration_size)
+                    for m in migrating:
+                        changes = viral_pops[j].current_gen.get_seq(m)
+                        viral_pops[i].current_gen.add_sequence(changes)
+
+    for i,pop in enumerate(viral_pops):
+        print pop.current_gen.to_fasta(n_seq=10,description='_population_'+str(i))
 
 if __name__ == '__main__':
-    events =     [(10,'t',0.1),(20,'v',1e5)] #(time,eventtype, new value), events: t: tranfer prop change, v: total volume change
-    skyline(events, plot=True, plot_freq=5,progress=True)
+    #events =     [(10,'t',0.1),(20,'v',1e5)] #(time,eventtype, new value), events: t: tranfer prop change, v: total volume change
+    #skyline(events, plot=True, plot_freq=5,progress=True)
+    #control(plot=True,plot_freq=10)
+    migration()

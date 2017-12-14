@@ -404,7 +404,7 @@ class Population():
 
     def get_sample(self, sample_size):
         try:
-            return np.random.choice(self.n_seq,size=sample_size,replace=False)
+            return np.random.choice(self.n_seq,size=int(sample_size),replace=False)
         except ValueError:
             return range(self.n_seq)
 

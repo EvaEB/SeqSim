@@ -129,8 +129,30 @@ def migration():
     for i,pop in enumerate(viral_pops):
         print pop.current_gen.to_fasta(n_seq=10,description='_population_'+str(i))
 
+def root():
+    times = [[10,0],[20,1],[25,2],[30,3]]
+    total_time = 35
+    times.append([total_time+1,1])
+    n_seq_init = 100
+    viral_pops = viral_pops = [passaging('phix174',initial_size=n_seq_init)]
+
+    print viral_pops[0].current_gen.to_fasta(seq_ids=[0],description='consensus')
+
+    for i in tqdm.tqdm(range(total_time)):
+        if i == times[0][0]:
+            viral_pops.append(viral_pops[times[0][1]].copy(i,n_seq=n_seq_init))
+            times.pop(0)
+        for j in viral_pops:
+            j.passage(1)
+
+    for i,pop in enumerate(viral_pops):
+        print pop.current_gen.to_fasta(n_seq=10,description='_population_'+str(i))
+
+
+
 if __name__ == '__main__':
     #events =     [(10,'t',0.1),(20,'v',1e5)] #(time,eventtype, new value), events: t: tranfer prop change, v: total volume change
     #skyline(events, plot=True, plot_freq=5,progress=True)
     #control(plot=True,plot_freq=10)
-    migration()
+    #migration()
+    root()

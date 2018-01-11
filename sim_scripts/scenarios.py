@@ -78,7 +78,7 @@ def skyline(events,initial_size=1e4,transfer_props=0.01,max_passage=100,
     plt.show()
     print skyline_sim.current_gen.to_fasta(n_seq=30)
 
-def control(initial_size=1e4,transfer_props=0.1,max_passage=100,
+def control(initial_size=1e6,transfer_props=0.01,max_passage=100,
             gen_per_transfer=2,plot=False,plot_freq=1,progress=False):
     control_sim = passaging('phix174', initial_size,initial_size, transfer_props,
                             gen_per_transfer)
@@ -96,7 +96,7 @@ def control(initial_size=1e4,transfer_props=0.1,max_passage=100,
 
     plt.ioff()
     plt.show()
-    print control_sim.current_gen.to_fasta(n_seq=30)
+    print control_sim.current_gen.to_fasta(n_seq=100)
 
 def migration():
     transfer_props = [[1e-2, 0, 5e-3],
@@ -153,6 +153,6 @@ def root():
 if __name__ == '__main__':
     #events =     [(10,'t',0.1),(20,'v',1e5)] #(time,eventtype, new value), events: t: tranfer prop change, v: total volume change
     #skyline(events, plot=True, plot_freq=5,progress=True)
-    #control(plot=True,plot_freq=10)
+    control(plot=True,plot_freq=10)
     #migration()
-    root()
+    #root()

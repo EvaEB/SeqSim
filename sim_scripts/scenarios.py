@@ -78,11 +78,21 @@ def skyline(events,initial_size=1e4,transfer_props=0.01,max_passage=100,
     plt.show()
     print skyline_sim.current_gen.to_fasta(n_seq=30)
 
-def control(initial_size=1e6,transfer_props=0.01,max_passage=200,
+def control(settings=None,initial_size=1e6,transfer_props=0.01,max_passage=200,
             gen_per_transfer=2,plot=False,plot_freq=1,progress=False):
-    control_sim = passaging('phix174', initial_size,initial_size, transfer_props,
-                            gen_per_transfer)
-    print control_sim.current_gen.to_fasta(seq_ids=[0],description='consensus')
+    fasta = ''
+    if settings is not None:
+        initial_size = settings['initial_size']
+        transfer_props = settings['transfer_proportion']
+        gen_per_transfer = settings['gen_per_transfer']
+        max_passage = settings['n_passages']
+
+        control_sim = passaging(settings,initial_size,initial_size,
+                                transfer_props,gen_per_transfer)
+    else:
+        control_sim = passaging('phix174', initial_size,initial_size,
+                                transfer_props, gen_per_transfer)
+    fasta+=control_sim.current_gen.to_fasta(seq_ids=[0],description='consensus')
     if plot:
         pp = progress_plot()
 
@@ -95,8 +105,13 @@ def control(initial_size=1e6,transfer_props=0.01,max_passage=200,
             pp.update_plot(total_time, control_sim)
 
     plt.ioff()
-    plt.show()
-    print control_sim.current_gen.to_fasta(n_seq=100)
+    #plt.show()
+    try:
+        fasta+=control_sim.current_gen.to_fasta(n_seq=100)
+    except ValueError:
+        fasta+=control_sim.current_gen.to_fasta(n_seq=None)
+
+    return fasta
 
 def migration():
     transfer_props = [[1e-2, 0, 5e-3],

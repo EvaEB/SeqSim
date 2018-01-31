@@ -467,9 +467,11 @@ class Population():
         return stats
 
 
-    def to_fasta(self, seq_ids=[], n_seq=1, description=''):
+    def to_fasta(self, seq_ids=[], n_seq=None, description=''):
         string = ''
         if len(seq_ids) == 0:
+            if n_seq is None:
+                n_seq = self.n_seq
             seq_ids = random.sample(range(self.n_seq), n_seq)
         bar = progressbar.ProgressBar()
         for i in bar(range(len(seq_ids))):

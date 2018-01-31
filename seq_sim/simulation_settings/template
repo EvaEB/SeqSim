@@ -3,30 +3,30 @@ model: #neutral,exponential,lognormal or spikes
 parameters:
     fl:     #exponential, lognormal
     fb:     #exponential (scalar)
-    beta:   #exponential
+    fd:     #exponential
+    ld:     #exponential
+    lb:     #exponential
     mu:     #lognormal
     sigma:  #lognormal
     loc:    #spikes (location of spikes)
     freq:   #spikes (fraction at spikes)
-    
+
 
 #settings for new mutations
 mut_rate: 1e-6
          #to   A     G     T     C      from
-subs_matrix: [[0.25, 0.50, 0.75, 1.],   #A
-              [0.25, 0.50, 0.75, 1.],   #G
-              [0.25, 0.50, 0.75, 1.],   #T
-              [0.25, 0.50, 0.75, 1.]]   #C
+subs_matrix: [[0.25, 0.50, 0.75, 1.0],   #A
+              [0.25, 0.50, 0.75, 1.0],   #G
+              [0.25, 0.50, 0.75, 1.0],   #T
+              [0.25, 0.50, 0.75, 1.0]]   #C
 
 #sequence settings
-seq_len: 
+seq_len:
 basedist: [0.25,0.5,0.75,1] #A,G,T,C
 
 #simulation settings
 n_seq_init: 1
-R0: 
+R0:
 ga_increase: 1
 max_pop:
 name: '0'
-
-

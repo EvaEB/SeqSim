@@ -78,7 +78,7 @@ def skyline(events,initial_size=1e4,transfer_props=0.01,max_passage=100,
     plt.show()
     print skyline_sim.current_gen.to_fasta(n_seq=30)
 
-def control(initial_size=1e6,transfer_props=0.01,max_passage=100,
+def control(initial_size=1e6,transfer_props=0.01,max_passage=200,
             gen_per_transfer=2,plot=False,plot_freq=1,progress=False):
     control_sim = passaging('phix174', initial_size,initial_size, transfer_props,
                             gen_per_transfer)

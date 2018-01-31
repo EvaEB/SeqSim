@@ -1,0 +1,7 @@
+#settings for the scenario to simulate
+scenario_name: #control, skyline, ....
+n_gen:
+n_transfer:
+v_transfer:
+v_well:
+n_gen_per_transfer:

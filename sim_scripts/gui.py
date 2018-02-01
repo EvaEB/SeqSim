@@ -21,6 +21,10 @@ def select():
     app.clearTextArea('ScenSet')
     app.setTextArea('ScenSet', ScenSettings)
 
+def update_fasta(fasta):
+    app.clearTextArea('fasta_text')
+    app.setTextArea('fasta_text',fasta)
+
 def settings_press(btn):
     settings = app.getAllTextAreas()
     major_settings = app.getAllOptionBoxes()
@@ -41,11 +45,10 @@ def settings_press(btn):
         with open(filename, 'w') as f:
             f.write(settings['ScenSet'])
     elif btn == 'run':
-        fasta = scenarios.run(major_settings['Scenario'],
+        fasta = app.threadCallback(scenarios.run,update_fasta,major_settings['Scenario'],
                               yaml.safe_load(settings['ScenSet']),
                               yaml.safe_load(settings['OrgSet']))
-        app.clearTextArea('fasta_text')
-        app.setTextArea('fasta_text',fasta)
+
     elif btn == 'save fasta':
         #specify file location
         filename = app.saveBox(title='Save fasta',fileExt=".fasta")
@@ -54,7 +57,10 @@ def settings_press(btn):
             f.write(settings['fasta_text'])
 
     elif btn == 'view highlighter':
-        fasta_tools.highlighter(fasta_string=settings['fasta_text'])
+        app.thread(fasta_tools.highlighter(fasta_string=settings['fasta_text'],consensus=0))
+
+    elif btn == 'view nj tree':
+        app.thread(fasta_tools.njTree(fasta_string=settings['fasta_text']))
 
 with gui('SeqSim') as app:
     Organism_options = os.listdir('../seq_sim/simulation_settings/')

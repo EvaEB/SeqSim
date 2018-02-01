@@ -24,11 +24,12 @@ class passaging():
         for i in range(self.n_pop):
             self.sims.append(main_sim.copy(names.next(),n_seq=self.settings['pop_size'][i]))
             self.sims[i].settings['max_pop'] = self.settings['max_pop'][i]
-        self.output = main_sim.current_gen.to_fasta(n_seq=1)
+        self.output = main_sim.current_gen.to_fasta(n_seq=1,description='consensus')
         self.cur_passage = 0
 
     def next_passage(self):
         self.cur_passage+=1
+        print self.cur_passage
         #handle events
         while self.cur_passage in self.settings['events'][0]:
             loc = self.settings['events'][0].index(self.cur_passage)
@@ -55,6 +56,7 @@ class passaging():
                                                    description=' - pop {} - transfer {} '.format(i,self.cur_passage))
 
             #change parameters for transfer
+            print pop.current_gen.n_seq
             pop.settings['max_pop'] = self.settings['transfer_prop']*pop.current_gen.n_seq
             pop.new_generation()
             pop.settings['max_pop'] = self.settings['max_pop'][i]
@@ -84,8 +86,8 @@ def run(scenario_settings,organism_settings):
 
 
 if __name__ == '__main__':
-    with open('/home/eva/code/SeqSim/seq_sim/simulation_settings/small') as sim_settings:
-        with open('/home/eva/code/SeqSim/sim_scripts/settings_files/RecreateDataset_template') as pas_settings:
+    with open('/home/eva/code/SeqSim/seq_sim/simulation_settings/phix174') as sim_settings:
+        with open('/home/eva/code/SeqSim/sim_scripts/settings_files/VirusPassaging_control') as pas_settings:
             passaging = passaging(yaml.safe_load(sim_settings),yaml.safe_load(pas_settings))
 
     for i in range(3):

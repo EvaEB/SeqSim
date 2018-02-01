@@ -341,10 +341,10 @@ class Simulation(object):
     def copy(self, name, n_seq = 0):
         '''create a deep copy of the simulation'''
         if n_seq == 0: #original state
-            return Simulation(self.settings, sequence = self.sequence,
+            return Simulation(deepcopy(self.settings), sequence = self.sequence,
                               fitness_table=self.fitness_table,name=name)
         else:
-            simcopy = Simulation(self.settings, sequence = self.sequence,
+            simcopy = Simulation(deepcopy(self.settings), sequence = self.sequence,
                                  fitness_table=self.fitness_table,
                                  name= name, n_seq_init=n_seq)
             sample = self.current_gen.get_sample(n_seq)
@@ -467,14 +467,13 @@ class Population():
         return stats
 
 
-    def to_fasta(self, seq_ids=[], n_seq=None, description=''):
+    def to_fasta(self, seq_ids=[], n_seq=None, description='',progress=False):
         string = ''
         if len(seq_ids) == 0:
             if n_seq is None:
                 n_seq = self.n_seq
             seq_ids = random.sample(range(self.n_seq), n_seq)
-        bar = progressbar.ProgressBar()
-        for i in bar(range(len(seq_ids))):
+        for i in range(len(seq_ids)):
             seqID = seq_ids[i]
             string += '>'+str(seqID)+''+str(description)+'\n'
             changed_here = self.get_seq(seqID)

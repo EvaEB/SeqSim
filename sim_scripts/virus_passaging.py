@@ -4,125 +4,73 @@
 Created on Tue Jul 11 15:13:13 2017
 
 @author: eva
+
+virus passaging as the experiment in the liquid handling robot
 """
-import optparse
+#import optparse
 import seq_sim as sim
-from tqdm import tqdm
+#from tqdm import tqdm
+import yaml
+
+class passaging():
+    def __init__(self, sim_settings, passaging_settings):
+        self.settings = passaging_settings
+
+        main_sim = sim.Simulation(sim_settings, n_seq_init = max(self.settings['pop_size']))
+        self.sims = []
+        self.n_pop = len(self.settings['pop_size'])
+
+        names = iter(range(self.n_pop))
+        for i in range(self.n_pop):
+            self.sims.append(main_sim.copy(names.next(),n_seq=self.settings['pop_size'][i]))
+            self.sims[i].settings['max_pop'] = self.settings['max_pop'][i]
+        self.output = ''
+        self.cur_passage = 0
+
+    def next_passage(self):
+        self.cur_passage+=1
+        #handle events
+        while self.cur_passage in self.settings['events'][0]:
+            loc = self.settings['events'][0].index(self.cur_passage)
+            self.settings[self.settings['events'][1][loc]] = self.settings['events'][2][loc]
+            del self.settings['events'][0][loc]
+
+        for gen in range(self.settings['n_gen_per_transfer']-1):
+            for pop in self.sims:
+                pop.new_generation()
 
 
-# def passaging(settings,n_gen=50,initial_size=1,max_size=1e5,transfer_size=0.005,
-#               transfer_time=2):
-#
-#     phage_sim = sim.Simulation(simulation_settings=settings,
-#                                n_seq_init=initial_size,
-#                                max_pop = max_size)
-#
-#
-#
-#     for gen in range(1,n_gen+1):
-#         if gen % transfer_time == 0:
-#             transferred = int(transfer_size*phage_sim.current_gen.n_seq)
-#             if transferred > 1:
-#                 phage_sim.settings['max_pop'] = transferred
-#             else:
-#                 phage_sim.settings['max_pop'] = 2
-#             phage_sim.new_generation()
-#             phage_sim.settings['max_pop'] = max_size
-#         else:
-#             phage_sim.new_generation()
-#
-#     return phage_sim
+        #passage: change population size, handle migration
+        previous = []
+        for pop,i in zip(self.sims, range(self.n_pop)):
+            #keep previous generation for migration
+            if self.settings['migration'] is not None:
+                previous.append(pop.current_gen)
 
-class passaging(sim.Simulation):
-    def __init__(self,simulation_settings,initial_size=10e4,max_size=10e4,
-                            transfer_prop=0.05,transfer_time=2, **kwargs):
-        sim.Simulation.__init__(self,simulation_settings,n_seq_init=initial_size,**kwargs)
-        self.initial_size = initial_size
-        self.max_size = max_size
-        self.transfer_prop = transfer_prop
-        self.transfer_time = transfer_time
+            #sample
+            self.output+= pop.current_gen.to_fasta(n_seq=self.settings['sampling'][i])
 
-    def copy(self,name, n_seq=1):
-        new_passaging = passaging(simulation_settings=self.settings,
-                                  initial_size=0,
-                                  max_size=self.max_size,
-                                  transfer_prop=self.transfer_prop,
-                                  transfer_time=self.transfer_time)
-        new_passaging.sequence = self.sequence
-        new_passaging.fitness_table = self.fitness_table
-        for seqid in self.current_gen.get_sample(n_seq):
-            changes = self.current_gen.get_seq(seqid)
-            new_passaging.current_gen.add_sequence(changes)
-        return new_passaging
+            #change parameters for transfer
+            pop.settings['max_pop'] = self.settings['transfer_prop']*pop.current_gen.n_seq
+            pop.new_generation()
+            pop.settings['max_pop'] = self.settings['max_pop'][i]
 
+        #handle migration
+        if self.settings['migration'] is not None:
+            changed_index = []
+            for to in range(self.n_pop):
+                for fro in range(self.n_pop):
+                    if to != fro:
+                        n_migrate = int(self.settings['migration'][to][fro]*previous[fro].n_seq) #number of sequences that migrate
+                        sample = previous[fro].get_sample(n_migrate) #sampled sequences
+                        for seq,i in zip(sample,range(n_migrate)):
+                            changed = previous[fro].get_seq(seq) #get the changes is this sequence
+                            self.sims[to].current_gen.add_sequence(changed)
 
-    def passage(self,n_passage,progressbar=False):
-        if progressbar:
-            bar = tqdm(range(n_passage))
+if __name__ == '__main__':
+    with open('/home/eva/code/SeqSim/seq_sim/simulation_settings/small') as sim_settings:
+        with open('/home/eva/code/SeqSim/sim_scripts/settings_files/RecreateDataset_template') as pas_settings:
+            passaging = passaging(yaml.safe_load(sim_settings),yaml.safe_load(pas_settings))
 
-        for i in range(n_passage):
-            for j in range(self.transfer_time-1):
-                self.new_generation()
-                if progressbar:
-                    bar.update()
-            self.settings['max_pop'] = max(2,self.transfer_prop*self.current_gen.n_seq)
-            self.new_generation()
-            self.settings['max_pop'] = self.max_size
-
-        if progressbar:
-            bar.close()
-
-
-if __name__ ==  '__main__':
-    parser = optparse.OptionParser()
-
-    parser.add_option("-g", "--n_gen", dest="n_gen",
-                      help="number of generations to run the simulation for")
-
-    parser.add_option("-p", "--passages", dest="n_pass",
-                      help="number of passages to run the simulation for")
-
-    parser.add_option("-i", "--initial_size", dest="initial_size",
-                      help="initial size of the virus population (default 1)")
-
-    parser.add_option("-m", "--max_size", dest="max_size",
-                      help="maximum size of the virus population")
-
-    parser.add_option("-t", "--transfer_time", dest="transfer_time",
-                      help="number of generations before each transfer")
-
-    parser.add_option("-r", "--transfer_prop", dest="transfer_prop",
-                      help="proportion of viral population that is transferred")
-
-    parser.add_option("-s", "--settings", dest="settings",
-                      help="settings file for the simulation")
-
-    (options, args) = parser.parse_args()
-
-    if options.transfer_time is None:
-        options.transfer_time = 2
-
-    if options.n_gen is None and options.n_pass is None:
-        parser.error('either number of generations (-g) or number of passages (-p) is required')
-    elif options.n_gen is not None and options.n_pass is not None:
-        parser.error('both number of generations (-g) or number of passages (-p) provided, please only provide one of the two')
-    elif options.n_pass is not None:
-        options.n_gen = options.n_pass * options.transfer_time
-
-    if options.settings is None:
-        options.settings = 'phix174'
-    if options.max_size is None:
-        options.max_size = 1e5
-
-    if options.transfer_prop is None:
-        options.transfer_prop = 0.005
-
-    if options.initial_size is None:
-        options.initial_size = 1e5
-
-    phage_sim = passaging(options.settings,options.initial_size,options.max_size,
-                          float(options.transfer_prop),options.transfer_time)
-
-    phage_sim.passage(100,progressbar=True)
-
-    print phage_sim
+    for i in range(3):
+        passaging.next_passage()

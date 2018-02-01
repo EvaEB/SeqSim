@@ -164,10 +164,13 @@ def root():
         print pop.current_gen.to_fasta(n_seq=10,description='_population_'+str(i))
 
 def run(scenario,scenario_settings,organism_settings):
-    if scenario == 'control':
+    scenario = scenario.split('_')[0]
+    if scenario == 'VirusPassaging':
         settings = scenario_settings.copy()
         settings.update(organism_settings)
         fasta = control(settings,plot=True)
+    elif scenario == 'RecreateDataset':
+        print 'implement recreate dataset here'
     return fasta
 
 if __name__ == '__main__':

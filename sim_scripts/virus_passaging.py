@@ -34,6 +34,8 @@ class passaging():
             loc = self.settings['events'][0].index(self.cur_passage)
             self.settings[self.settings['events'][1][loc]] = self.settings['events'][2][loc]
             del self.settings['events'][0][loc]
+            del self.settings['events'][1][loc]
+            del self.settings['events'][2][loc]
 
         for gen in range(self.settings['n_gen_per_transfer']-1):
             for pop in self.sims:
@@ -48,7 +50,9 @@ class passaging():
                 previous.append(pop.current_gen)
 
             #sample
-            self.output+= pop.current_gen.to_fasta(n_seq=self.settings['sampling'][i])
+
+            self.output+= pop.current_gen.to_fasta(n_seq=self.settings['sampling'][i],
+                                                   description=' - pop {} - transfer {} '.format(i,self.cur_passage))
 
             #change parameters for transfer
             pop.settings['max_pop'] = self.settings['transfer_prop']*pop.current_gen.n_seq
@@ -66,6 +70,18 @@ class passaging():
                         for seq,i in zip(sample,range(n_migrate)):
                             changed = previous[fro].get_seq(seq) #get the changes is this sequence
                             self.sims[to].current_gen.add_sequence(changed)
+
+    def all_passages(self):
+        for passage in range(self.settings['n_transfer']):
+            self.next_passage()
+
+
+def run(scenario_settings,organism_settings):
+    passaging_run = passaging(organism_settings,scenario_settings)
+    passaging_run.all_passages()
+    return passaging_run.output
+
+
 
 if __name__ == '__main__':
     with open('/home/eva/code/SeqSim/seq_sim/simulation_settings/small') as sim_settings:

@@ -7,7 +7,6 @@ import tqdm
 
 
 class progress_plot():
-
     def __init__(self):
         plt.ion()
         self.fig = plt.figure()
@@ -51,124 +50,12 @@ class progress_plot():
         self.ax4.relim()
         self.ax4.autoscale_view()
 
-def skyline(events,initial_size=1e4,transfer_props=0.01,max_passage=100,
-            gen_per_transfer=2,plot=False,plot_freq=1,progress=False):
-    skyline_sim = passaging('phix174', initial_size,initial_size, transfer_props,
-                            gen_per_transfer)
-    print skyline_sim.current_gen.to_fasta(seq_ids=[0],description='consensus'),
-    if plot:
-        pp = progress_plot()
-
-    total_time = 0
-    for i in tqdm.tqdm(range(max_passage)):
-        while len(events) > 0 and events[0][0] == i:
-            if events[0][1] == 't':
-                skyline_sim.transfer_prop = events[0][2]
-            elif events[0][1] == 'v':
-                skyline_sim.max_size = events[0][2]
-            del events[0]
-            #del event_times[0]
-        skyline_sim.passage(1)
-        total_time+=1
-
-        if plot and (i%plot_freq==0 or i == max_passage-1):
-            pp.update_plot(total_time, skyline_sim)
-
-    plt.ioff()
-    plt.show()
-    print skyline_sim.current_gen.to_fasta(n_seq=30)
-
-def control(settings=None,initial_size=1e6,transfer_props=0.01,max_passage=200,
-            gen_per_transfer=2,plot=False,plot_freq=1,progress=False):
-    fasta = ''
-    if settings is not None:
-        initial_size = settings['initial_size']
-        transfer_props = settings['transfer_proportion']
-        gen_per_transfer = settings['gen_per_transfer']
-        max_passage = settings['n_passages']
-
-        control_sim = passaging(settings,initial_size,initial_size,
-                                transfer_props,gen_per_transfer)
-    else:
-        control_sim = passaging('phix174', initial_size,initial_size,
-                                transfer_props, gen_per_transfer)
-    fasta+=control_sim.current_gen.to_fasta(seq_ids=[0],description='consensus')
-    if plot:
-        pp = progress_plot()
-
-    total_time = 0
-    for i in tqdm.tqdm(range(max_passage)):
-        control_sim.passage(1)
-        total_time+=1
-
-        if plot and (i%plot_freq==0 or i == max_passage-1):
-            pp.update_plot(total_time, control_sim)
-
-    plt.ioff()
-    #plt.show()
-    try:
-        fasta+=control_sim.current_gen.to_fasta(n_seq=100)
-    except ValueError:
-        fasta+=control_sim.current_gen.to_fasta(n_seq=None)
-
-    return fasta
-
-def migration():
-    transfer_props = [[1e-2, 0, 5e-3],
-                      [5e-3, 1e-2, 0],
-                      [5e-3, 0, 1e-2]]
-    max_passage =  100
-    n_pop = len(transfer_props)
-    n_seq_init = 1e4
-    viral_pops = [passaging('phix174',initial_size=n_seq_init,
-                            transfer_prop = transfer_props[0][0])]
-    print viral_pops[0].current_gen.to_fasta(seq_ids=[0],description='consensus')
-
-    for i in range(1,n_pop):
-        viral_pops.append(viral_pops[-1].copy(i,n_seq=n_seq_init))
-        viral_pops[-1].transfer_prop = transfer_props[i][i]
-
-    for i in tqdm.tqdm(range(max_passage)):
-        for i in viral_pops:
-            i.passage(1)
-        for i in range(n_pop):
-            for j in range(n_pop):
-                if i != j:
-                    amount = transfer_props[i][j]
-                    migration_size = int(viral_pops[j].current_gen.n_seq*amount)
-                    migrating = viral_pops[j].current_gen.get_sample(migration_size)
-                    for m in migrating:
-                        changes = viral_pops[j].current_gen.get_seq(m)
-                        viral_pops[i].current_gen.add_sequence(changes)
-
-    for i,pop in enumerate(viral_pops):
-        print pop.current_gen.to_fasta(n_seq=10,description='_population_'+str(i))
-
-def root():
-    times = [[10,0],[20,1],[25,2],[30,3]]
-    total_time = 35
-    times.append([total_time+1,1])
-    n_seq_init = 100
-    viral_pops = viral_pops = [passaging('phix174',initial_size=n_seq_init)]
-
-    print viral_pops[0].current_gen.to_fasta(seq_ids=[0],description='consensus')
-
-    for i in tqdm.tqdm(range(total_time)):
-        if i == times[0][0]:
-            viral_pops.append(viral_pops[times[0][1]].copy(i,n_seq=n_seq_init))
-            times.pop(0)
-        for j in viral_pops:
-            j.passage(1)
-
-    for i,pop in enumerate(viral_pops):
-        print pop.current_gen.to_fasta(n_seq=10,description='_population_'+str(i))
 
 def run(scenario,scenario_settings,organism_settings):
     scenario = scenario.split('_')[0]
     if scenario == 'VirusPassaging':
-        settings = scenario_settings.copy()
-        settings.update(organism_settings)
-        fasta = control(settings,plot=True)
+        import virus_passaging
+        fasta = virus_passaging.run(scenario_settings,organism_settings)
     elif scenario == 'RecreateDataset':
         print 'implement recreate dataset here'
     return fasta

@@ -3,6 +3,8 @@ import yaml
 import os
 import scenarios
 from collections import OrderedDict
+import fasta_tools
+
 
 def select():
     selection = app.getAllOptionBoxes()
@@ -51,6 +53,9 @@ def settings_press(btn):
         with open(filename, 'w') as f:
             f.write(settings['fasta_text'])
 
+    elif btn == 'view highlighter':
+        fasta_tools.highlighter(fasta_string=settings['fasta_text'])
+
 with gui('SeqSim') as app:
     Organism_options = os.listdir('../seq_sim/simulation_settings/')
     app.addLabelOptionBox('Organism',Organism_options)
@@ -76,4 +81,4 @@ with gui('SeqSim') as app:
     app.setLabelBg('fasta','grey')
     app.addTextArea('fasta_text')
     app.getTextAreaWidget('fasta_text').config(font="Courier 20")
-    app.addButton('save fasta',settings_press)
+    app.addButtons(['save fasta','view highlighter','view nj tree'],settings_press)

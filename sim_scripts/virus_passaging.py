@@ -24,7 +24,7 @@ class passaging():
         for i in range(self.n_pop):
             self.sims.append(main_sim.copy(names.next(),n_seq=self.settings['pop_size'][i]))
             self.sims[i].settings['max_pop'] = self.settings['max_pop'][i]
-        self.output = ''
+        self.output = main_sim.current_gen.to_fasta(n_seq=1)
         self.cur_passage = 0
 
     def next_passage(self):

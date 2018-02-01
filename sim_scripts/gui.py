@@ -40,6 +40,7 @@ def next(btn):
     entries = settings.getAllEntries()
     for i in entries:
         cur_settings[i] = entries[i]
+        
     if settings.getPagedWindowPageNumber('settings') == 2: #organism settings
         if final_settings['Organism'] != cur_settings['Organism']: #organism has changed
             settings.setLabel('l2', 'Organism settings: {}'.format(cur_settings['Organism']))
@@ -110,7 +111,7 @@ with gui('simulation') as settings:
         settings.setPagedWindowFunction('settings', next)
         with settings.page():
             settings.addLabel('Basic selection')
-            settings.addLabelOptionBox('Scenario',['control','-skyline','-migration','-root'])
+            settings.addLabelOptionBox('Scenario',['recreate_dataset','control','-skyline','-migration','-root'])
             settings.addLabelOptionBox('Organism', ['HIV','phix174'])
 
         with settings.page():
@@ -119,7 +120,7 @@ with gui('simulation') as settings:
 
         with settings.page():
             settings.addLabel('l4','Scenario Settings')
-            form_from_file('/home/eva/code/SeqSim/sim_scripts/settings_files/template',settings)
+            #form_from_file('/home/eva/code/SeqSim/sim_scripts/settings_files/template',settings)
 
         with settings.page():
             settings.addLabel('Overview')

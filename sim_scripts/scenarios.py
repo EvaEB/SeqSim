@@ -163,7 +163,12 @@ def root():
     for i,pop in enumerate(viral_pops):
         print pop.current_gen.to_fasta(n_seq=10,description='_population_'+str(i))
 
-
+def run(scenario,scenario_settings,organism_settings):
+    if scenario == 'control':
+        settings = scenario_settings.copy()
+        settings.update(organism_settings)
+        fasta = control(settings,plot=True)
+    return fasta
 
 if __name__ == '__main__':
     #events =     [(10,'t',0.1),(20,'v',1e5)] #(time,eventtype, new value), events: t: tranfer prop change, v: total volume change

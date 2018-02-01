@@ -1,135 +1,79 @@
 from appJar import gui
 import yaml
+import os
 import scenarios
+from collections import OrderedDict
 
+def select():
+    selection = app.getAllOptionBoxes()
 
-results = 'simulation not run yet'
-final_settings = {'Organism': '','Scenario': ''}
+    #display default settings organism
+    with open('../seq_sim/simulation_settings/'+selection['Organism']) as f:
+        OrgSettings = f.read()
+    app.clearTextArea('OrgSet')
+    app.setTextArea('OrgSet', OrgSettings)
 
-def form_from_file(fname,screen):
-    with open(fname) as f:
-        pos_settings = yaml.safe_load(f)
+    #display default settings Scenario
+    with open('settings_files/'+selection['Scenario']) as f:
+        ScenSettings = f.read()
+    app.clearTextArea('ScenSet')
+    app.setTextArea('ScenSet', ScenSettings)
 
-    for i in pos_settings:
-        final_settings[i] = pos_settings[i]
-        if type(pos_settings[i]) is dict:
-            screen.addLabel('--')
-            screen.addLabel(i,i)
-            for j in pos_settings[i]:
-                screen.addLabelEntry(j)
-                screen.setEntry(j,pos_settings[i][j])
-            screen.addLabel('---')
-        else:
-            screen.addLabelEntry(i)
-            screen.setEntry(i,pos_settings[i])
+def settings_press(btn):
+    settings = app.getAllTextAreas()
+    major_settings = app.getAllOptionBoxes()
+    if btn == 'save organism settings':
+        #specify file location
+        filename = app.saveBox(title='Save organism settings',
+                               dirName='../seq_sim/simulation_settings',
+                               fileExt="")
+        #save file
+        with open(filename, 'w') as f:
+            f.write(settings['OrgSet'])
+    elif btn == 'save scenario settings':
+        #specify file location
+        filename = app.saveBox(title='Save scenario settings',
+                               dirName='settings_files/',
+                               fileExt="")
+        #save file
+        with open(filename, 'w') as f:
+            f.write(settings['ScenSet'])
+    elif btn == 'run':
+        fasta = scenarios.run(major_settings['Scenario'],
+                              yaml.safe_load(settings['ScenSet']),
+                              yaml.safe_load(settings['OrgSet']))
+        app.clearTextArea('fasta_text')
+        app.setTextArea('fasta_text',fasta)
+    elif btn == 'save fasta':
+        #specify file location
+        filename = app.saveBox(title='Save fasta',fileExt=".fasta")
+        #save file
+        with open(filename, 'w') as f:
+            f.write(settings['fasta_text'])
 
-def press(btn):
-    global results
-    if btn == 'run':
-        if final_settings['Scenario'] == 'control':
-            results = scenarios.control(final_settings,plot=True)
-            settings.setMessage('fasta', results)
-    if btn == 'save Fasta':
-        dest = settings.saveBox('save fasta as')
-        with open(dest,'w') as f:
-            f.write(results)
+with gui('SeqSim') as app:
+    Organism_options = os.listdir('../seq_sim/simulation_settings/')
+    app.addLabelOptionBox('Organism',Organism_options)
 
-def next(btn):
-    global final_settings
-    cur_settings = settings.getAllOptionBoxes()
-    entries = settings.getAllEntries()
-    for i in entries:
-        cur_settings[i] = entries[i]
-        
-    if settings.getPagedWindowPageNumber('settings') == 2: #organism settings
-        if final_settings['Organism'] != cur_settings['Organism']: #organism has changed
-            settings.setLabel('l2', 'Organism settings: {}'.format(cur_settings['Organism']))
-            with open('/home/eva/code/SeqSim/seq_sim/simulation_settings/{}'.format(cur_settings['Organism'])) as f:
-                pos_settings = yaml.safe_load(f)
-            for i in pos_settings:
-                if type(pos_settings[i]) is dict:
-                    for j in pos_settings[i]:
-                        if type(pos_settings[i][j]) is float:
-                            settings.setEntry(j,'{:f}'.format(pos_settings[i][j])) #fix for problem parsing scientific notation
-                        else:
-                            settings.setEntry(j,pos_settings[i][j])
-                else:
-                    if type(pos_settings[i]) is float:
-                        settings.setEntry(i,'{:f}'.format(pos_settings[i])) #fix for problem parsing scientific notation
-                    else:
-                        settings.setEntry(i,pos_settings[i])
+    Scenario_options = os.listdir('settings_files/')
+    app.addLabelOptionBox('Scenario',Scenario_options)
 
-    if final_settings['Scenario'] != cur_settings['Scenario']: #Scenario has changed
-        settings.setLabel('l2', 'Organism settings: {}'.format(cur_settings['Scenario']))
-        with open('/home/eva/code/SeqSim/sim_scripts/settings_files/{}'.format(cur_settings['Scenario'])) as f:
-            pos_settings = yaml.safe_load(f)
-        for i in pos_settings:
-            if type(pos_settings[i]) is dict:
-                for j in pos_settings[i]:
-                    if type(pos_settings[i][j]) is float:
-                        settings.setEntry(j,'{:f}'.format(pos_settings[i][j])) #fix for problem parsing scientific notation
-                    else:
-                        settings.setEntry(j,pos_settings[i][j])
-            else:
-                if type(pos_settings[i]) is float:
-                    settings.setEntry(i,'{:f}'.format(pos_settings[i])) #fix for problem parsing scientific notation
-                else:
-                    settings.setEntry(i,pos_settings[i])
+    app.addButton('select',select)
 
+    app.addLabel('Org','Organism settings')
+    app.setLabelBg('Org','grey')
+    app.addTextArea('OrgSet')
+    app.getTextAreaWidget('OrgSet').config(font="Courier 20")
+    app.addButton('save organism settings',settings_press)
 
-    #if settings.getPagedWindowPageNumber('settings') == 3: #Scenario settings
+    app.addLabel('Scen','Scenario settings')
+    app.setLabelBg('Scen','grey')
+    app.addTextArea('ScenSet')
+    app.getTextAreaWidget('ScenSet').config(font="Courier 20")
+    app.addButtons(['save scenario settings','run'],settings_press)
 
-
-    if settings.getPagedWindowPageNumber('settings') == 4: # Overview page
-        message = ''
-        for i in final_settings:
-            if type( final_settings[i]) is dict:
-                message+=i+'\n'
-                for j in  final_settings[i]:
-                    message+='\t'+ str(final_settings[i][j])+'\n'
-            else:
-                message+=i+'\t'+ str(final_settings[i])+'\n'
-        settings.setMessage('overview_settings',message)
-
-    for i in cur_settings:
-        if i in final_settings.keys():
-            final_settings[i] = yaml.load(cur_settings[i])
-        elif i in final_settings['parameters'].keys():
-            print cur_settings[i]
-            final_settings['parameters'][i] = yaml.load(cur_settings[i])
-        else:
-            print i
-
-
-
-
-
-
-with gui('simulation') as settings:
-    settings.setResizable(canResize=True)
-    with settings.pagedWindow('settings'):
-        settings.setPagedWindowFunction('settings', next)
-        with settings.page():
-            settings.addLabel('Basic selection')
-            settings.addLabelOptionBox('Scenario',['recreate_dataset','control','-skyline','-migration','-root'])
-            settings.addLabelOptionBox('Organism', ['HIV','phix174'])
-
-        with settings.page():
-            settings.addLabel('l2','Organism Settings')
-            form_from_file('/home/eva/code/SeqSim/seq_sim/simulation_settings/template',settings)
-
-        with settings.page():
-            settings.addLabel('l4','Scenario Settings')
-            #form_from_file('/home/eva/code/SeqSim/sim_scripts/settings_files/template',settings)
-
-        with settings.page():
-            settings.addLabel('Overview')
-            with settings.scrollPane('scroll'):
-                settings.addEmptyMessage('overview_settings')
-            settings.addButton('run',press)
-
-        with settings.page():
-            settings.addLabel('results')
-            with settings.scrollPane('scroll2'):
-                settings.addMessage('fasta', results)
-            settings.addButton('save Fasta', press)
+    app.addLabel('fasta','simulation output')
+    app.setLabelBg('fasta','grey')
+    app.addTextArea('fasta_text')
+    app.getTextAreaWidget('fasta_text').config(font="Courier 20")
+    app.addButton('save fasta',settings_press)

@@ -42,10 +42,45 @@ see `help(seq_sim.Simulation)` for all possible settings
 
 		sim.current_gen.stats()
 
-# sim_scripts - specific simulation scenarios using seq_sim
-## recreate dataset
+# sim_scripts - simulation of specific scenarios using seq_sim
+## The gui
+### Installation
+Install dependencies:
+  * appJar `pip install appjar`
+  * pyyaml `pip install pyyaml`
+  * fasta_tools (available on my git - ask for access if you don't have it)
 
+make sure seq_sim is in the same folder as sim_scipts (otherwise some file references don't work)
+
+### Usage
+* start `gui.py`
+* choose the organism and scenarios
+* change settings if required (changes are not saved to the original file!)
+* run a simulation
+* view results (fasta, highlighter or neighbor-joining tree)
+
+### Adding new scenarios
+Write a python function for the new scenario, make sure it can take a library with scenario_settings and organism_settings as arguments and returns a string formatted as a fasta-file
+
+    new_scenario(scenario_settings, organism_settings)
+
+Add an entry to the `run` funtion in `scenarios.py`
+
+    if scenario == 'NewScenario':
+      fasta = new_scenario(scenario_settings, organism_settings)
+
+Add a settings file (or template) to settings_files. filetype must be of the format `NewScenario[_something]`
+
+
+### Making new settings files
+ * Everything before the underscore must match what is checked in the if-statement in the `run`-function in `scenarios.py` for this scenarios
+ * The file must be in the 'yaml' format (http://www.yaml.org/spec/1.2/spec.html)
+ * Due to issues with scientific notation parsing, it is important to always use a decimal point when using scientific notation of numbers (`1.0e5` rather than `1e5`)
+
+## recreate dataset
+run a simulation of sequence diversification until the number of unique mutations matches that in a given dataset
+*more info on command-line usage coming*
 
 ## virus passaging
-
-## using the gui
+run a simulation of virus passaging experiments
+*more info on command-line usage coming*

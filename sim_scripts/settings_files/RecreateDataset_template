@@ -1,0 +1,6 @@
+#recreate_dataset, according to the Keele-Li dataset
+scenario_name: recreate_dataset
+nrMutations: [17]
+SampleSize: [33]
+apobec_IDs: [1]
+apobec_rate: 10

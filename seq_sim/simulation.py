@@ -16,6 +16,7 @@ import os
 import inspect
 import progressbar
 import scipy.stats as scats
+import sys
 
 class Seq(object):
     '''
@@ -282,6 +283,7 @@ class Simulation(object):
                             success_mut += 1
 #    @profile
     def new_generation(self):
+        print sys.getsizeof(self.current_gen.changes)
         """create a new generation in the simulation"""
         self.effective_pop = 0
         self.gen += 1
@@ -526,10 +528,8 @@ class Population():
                 return np.nan
 
 if __name__ == '__main__':
-    import sys
-
-    settings = sys.argv[1]
-    n_gen = int(sys.argv[2])
+    settings = '/home/eva/code/SeqSim/seq_sim/simulation_settings/phix174' #sys.argv[1]
+    n_gen = 20#int(sys.argv[2])
 
     sim = Simulation(settings)
 

@@ -42,8 +42,8 @@ seq_len: 5386
 basedist: [0.25,0.5,0.75,1] #A,G,T,C
 
 #simulation settings
-n_seq_init: 1
-R0: 200
+n_seq_init: 1000000
+R0: 100
 ga_increase: 1
-max_pop: 10000 #0.8e+9
+max_pop: 1000000 #0.8e+9
 name: 'phiX174'

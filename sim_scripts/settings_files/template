@@ -1,6 +1,0 @@
-#settings for the scenario to simulate
-scenario_name: #control, skyline, ....
-n_passages:
-transfer_proportion:
-gen_per_transfer:
-initial_size:

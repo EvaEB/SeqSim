@@ -1,6 +1,0 @@
-#settings for the scenario to simulate
-scenario_name: control
-n_passages: 200
-transfer_proportion: 0.01
-gen_per_transfer: 2
-initial_size: 10000

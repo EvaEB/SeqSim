@@ -4,6 +4,7 @@ import os
 import scenarios
 from collections import OrderedDict
 import fasta_tools
+from IPython.utils.capture import capture_output
 
 
 def select():
@@ -46,9 +47,8 @@ def settings_press(btn):
             f.write(settings['ScenSet'])
     elif btn == 'run':
         fasta = app.threadCallback(scenarios.run,update_fasta,major_settings['Scenario'],
-                              yaml.safe_load(settings['ScenSet']),
-                              yaml.safe_load(settings['OrgSet']))
-
+                                  yaml.safe_load(settings['ScenSet']),
+                                  yaml.safe_load(settings['OrgSet']))
     elif btn == 'save fasta':
         #specify file location
         filename = app.saveBox(title='Save fasta',fileExt=".fasta")

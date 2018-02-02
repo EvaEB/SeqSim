@@ -62,6 +62,7 @@ def settings_press(btn):
     elif btn == 'view nj tree':
         app.thread(fasta_tools.njTree(fasta_string=settings['fasta_text']))
 
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 with gui('SeqSim') as app:
     Organism_options = os.listdir('../seq_sim/simulation_settings/')
     app.addLabelOptionBox('Organism',Organism_options)

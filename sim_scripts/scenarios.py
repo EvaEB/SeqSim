@@ -57,7 +57,14 @@ def run(scenario,scenario_settings,organism_settings):
         import virus_passaging
         fasta = virus_passaging.run(scenario_settings,organism_settings)
     elif scenario == 'RecreateDataset':
-        print 'implement recreate dataset here'
+        import recreate_dataset
+        fasta = recreate_dataset.recreate_dataset(scenario_settings['SampleSize'],
+                                                  scenario_settings['nrMutations'],
+                                                  scenario_settings['apobec_IDs'],
+                                                  apobec_rate=scenario_settings['apobec_rate'],
+                                                  action='fasta',
+                                                  simulation_settings=organism_settings)
+
     return fasta
 
 if __name__ == '__main__':

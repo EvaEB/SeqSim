@@ -64,6 +64,8 @@ def recreate_dataset(sample_sizes,nr_mutations,apobec,model=None,parameters=None
         stats_here = stats()
     elif action == 'n_generations':
         n_gen = []
+    elif action == 'fasta':
+        fasta = simul.current_gen.to_fasta(n_seq=1,description=' - ancestor')
     for e, sample_size in enumerate(sample_sizes):
         this_patient = simul.copy(name=e)
         for i in range(150):
@@ -91,6 +93,9 @@ def recreate_dataset(sample_sizes,nr_mutations,apobec,model=None,parameters=None
                         #print i
                         poisson = this_patient.current_gen.Hamming_distance(this_patient.settings,sample,action='print')
                         n_gen.append([i, poisson])
+                    elif action == 'fasta':
+                        fasta+= this_patient.current_gen.to_fasta(seq_ids=sample,
+                                                                 description= ' - patient {}'.format(this_patient.settings['name']))
                     break
                 else:
                     if action == 'print':
@@ -102,6 +107,9 @@ def recreate_dataset(sample_sizes,nr_mutations,apobec,model=None,parameters=None
                         #print i
                         poisson = previous_gen.Hamming_distance(this_patient.settings,sample,action='print')
                         n_gen.append([i,poisson])
+                    elif action == 'fasta':
+                        fasta+= previous_gen.to_fasta(seq_ids=sample,
+                                                     description= ' - patient {}'.format(this_patient.settings['name']))
                     break
             else:
                 previous = n_changed
@@ -111,7 +119,8 @@ def recreate_dataset(sample_sizes,nr_mutations,apobec,model=None,parameters=None
         return this_patient,stats_here, stats_here.get_stats(simul)
     elif action == 'n_generations':
         return n_gen
-
+    elif action == 'fasta':
+        return fasta
 
 if __name__ == '__main__':
     import sys

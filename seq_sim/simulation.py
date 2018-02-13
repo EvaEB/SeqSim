@@ -472,8 +472,9 @@ class Population():
     def to_fasta(self, seq_ids=[], n_seq=None, description='',progress=False):
         string = ''
         if len(seq_ids) == 0:
-            if n_seq is None:
+            if n_seq is None or n_seq > self.n_seq:
                 n_seq = self.n_seq
+
             seq_ids = random.sample(range(self.n_seq), n_seq)
         for i in range(len(seq_ids)):
             seqID = seq_ids[i]

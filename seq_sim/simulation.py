@@ -282,7 +282,7 @@ class Simulation(object):
                             pop.add_change(seq_id, where, new_base)
                             success_mut += 1
 #    @profile
-    def new_generation(self):
+    def new_generation(self,dieout=False):
         print sys.getsizeof(self.current_gen.changes)
         """create a new generation in the simulation"""
         self.effective_pop = 0
@@ -328,7 +328,7 @@ class Simulation(object):
             self.mutate_seq(new_generation, seq_id)
 
 
-        if new_generation.n_seq == 0:
+        if new_generation.n_seq == 0 and dieout = False:
             print 'died out'
             n_gen = self.gen
             self = self.copy(self.settings['name'])

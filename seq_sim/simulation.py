@@ -283,7 +283,7 @@ class Simulation(object):
                             success_mut += 1
 #    @profile
     def new_generation(self,dieout=False):
-        print sys.getsizeof(self.current_gen.changes)
+        #print sys.getsizeof(self.current_gen.changes)
         """create a new generation in the simulation"""
         self.effective_pop = 0
         self.gen += 1
@@ -411,7 +411,11 @@ class Population():
             return range(self.n_seq)
 
 
-
+    def delete_sequence(self, ID):
+        self.n_seq-=1
+        if self.get_seq(ID) is not None:
+            self.changed.remove(ID)
+            del self.changes[ID]
 
     def add_sequence(self, changes=None):
         self.n_seq += 1

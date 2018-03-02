@@ -328,7 +328,7 @@ class Simulation(object):
             self.mutate_seq(new_generation, seq_id)
 
 
-        if new_generation.n_seq == 0 and dieout = False:
+        if new_generation.n_seq == 0 and not dieout :
             print 'died out'
             n_gen = self.gen
             self = self.copy(self.settings['name'])

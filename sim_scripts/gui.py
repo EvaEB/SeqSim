@@ -1,3 +1,5 @@
+ import matplotlib
+matplotlib.use('TkAgg')
 from appJar import gui
 import yaml
 import os

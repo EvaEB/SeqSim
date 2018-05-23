@@ -340,15 +340,15 @@ class Simulation(object):
 
 
 
-    def copy(self, name, n_seq = 0):
+    def copy(self, name, n_seq = 0,**kwargs):
         '''create a deep copy of the simulation'''
         if n_seq == 0: #original state
             return Simulation(deepcopy(self.settings), sequence = self.sequence,
-                              fitness_table=self.fitness_table,name=name)
+                              fitness_table=self.fitness_table,name=name,**kwargs)
         else:
             simcopy = Simulation(deepcopy(self.settings), sequence = self.sequence,
                                  fitness_table=self.fitness_table,
-                                 name= name, n_seq_init=n_seq)
+                                 name= name, n_seq_init=n_seq,**kwargs)
             sample = self.current_gen.get_sample(n_seq)
             for i,s in enumerate(sample):
                 changes = self.current_gen.get_seq(s)
@@ -403,6 +403,18 @@ class Population():
                                                                              seq=i,
                                                                              patient=self.sim.settings['name'])
         print string
+    def sample_to_string(self, seq_ids):
+        string = '#mutID (from-pos-to)\tsequence\tpatient\n'
+        for i in range(self.n_seq):
+            if i in self.changed and i in seq_ids:
+                for j in self.changes[i]:
+                    pos = j[0]
+                    string += '{orig}-{pos}-{to}\t{seq}\t{patient}\n'.format(orig=self.sim.sequence[pos],
+                                                                             pos=pos,
+                                                                             to=j[1],
+                                                                             seq=i,
+                                                                             patient=self.sim.settings['name'])
+        return string
 
     def get_sample(self, sample_size):
         try:

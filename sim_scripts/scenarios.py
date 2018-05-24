@@ -64,6 +64,9 @@ def run(scenario,scenario_settings,organism_settings):
                                                   apobec_rate=scenario_settings['apobec_rate'],
                                                   action='fasta',
                                                   simulation_settings=organism_settings)
+    elif scenario == 'MultipleCompartments':
+        import multiple_compartments
+        fasta = multiple_compartments.run(scenario_settings,organism_settings)
 
     return fasta
 

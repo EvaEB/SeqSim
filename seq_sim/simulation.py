@@ -337,12 +337,13 @@ class Simulation(object):
 
         else:
             self.current_gen = new_generation
+        self.n_seq = self.current_gen.n_seq
 
 
 
-    def copy(self, name, n_seq = 0,**kwargs):
+    def copy(self, name, n_seq = -1,**kwargs):
         '''create a deep copy of the simulation'''
-        if n_seq == 0: #original state
+        if n_seq == -1: #original state
             return Simulation(deepcopy(self.settings), sequence = self.sequence,
                               fitness_table=self.fitness_table,name=name,**kwargs)
         else:

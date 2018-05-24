@@ -58,7 +58,7 @@ Install dependencies:
 make sure seq_sim is in the same folder as sim_scipts (otherwise some file references don't work)
 
 ### Usage
-* start `gui.py`
+* start `gui.py` (`python gui.py` in a terminal)
 * choose the organism and scenarios
 * change settings if required (changes are not saved to the original file!)
 * run a simulation
@@ -74,7 +74,7 @@ Add an entry to the `run` funtion in `scenarios.py`
     if scenario == 'NewScenario':
       fasta = new_scenario(scenario_settings, organism_settings)
 
-Add a settings file (or template) to settings_files. filetype must be of the format `NewScenario[_something]`
+Add a settings file (or template) to settings_files. Filetype must be of the format `NewScenario[_something]`
 
 
 ### Making new settings files

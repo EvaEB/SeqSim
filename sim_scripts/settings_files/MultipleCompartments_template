@@ -1,0 +1,11 @@
+n_gen:          5 #number of generations to run the simulation for
+
+n_comparments:  2 #number of compartments
+migration:      0.005 #migration rate between compartments (float: constant migration rate or migration matrix with row = from and column = to)
+diverse_index:  0 #how different the fitness tables are for each of the compartments (0 - all the same, parallel evolution, 1 - all different, complete divergent evolution)
+
+names:         ['bla', 'blo']  #names of the compartments
+n_seq_init:    [1,10]          #number of initial sequences per compartment
+mut_rate:      [1.0e-6,1.0e-6]    #mutation rate per compartment
+R0:            [2,10]          #R0 per compartment
+max_pop:       [100,1000]      #max pop per compartment

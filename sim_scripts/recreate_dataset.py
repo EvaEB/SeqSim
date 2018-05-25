@@ -123,23 +123,63 @@ def recreate_dataset(sample_sizes,nr_mutations,apobec,model=None,parameters=None
         return fasta
 
 if __name__ == '__main__':
-    import sys
-    settings = sys.argv[1]
-    patient_file = sys.argv[2]
-    action = sys.argv[3] #print, shared_stats or n_generations
-    apobec_rate = sys.argv[4]
+    import argparse
 
-    with open(patient_file) as f:
-        patients = f.readlines()
+    #parse command line arguments
+    parser = argparse.ArgumentParser(description='recreate a dataset of sequence samples with a given amount of mutations and sequences per sample')
+    parser.add_argument('-o', nargs=1,default = ['HIV'],
+                        help='organism simulation settings to use')
+    parser.add_argument('-p', nargs=1, default=None,
+                       help='path to file with samplesizes, number of mutations and apobec status')
+    parser.add_argument('-samples', nargs='+', default=None, type=int,
+                       help='number of samples for each individual to recreate')
+    parser.add_argument('-muts', nargs='+', default=None, type=int,
+                       help='number of unique mutations in each individual to recreate')
+    parser.add_argument('-apobec', nargs='+', default=None, type=int,
+                       help='apobec status for all of the individuals to recreate')
+    parser.add_argument('-action', default='print',
+                       help='action: print: print summary of changes\
+                             fasta: output fasta,\
+                             shared_stats: some statistics on sharing,\
+                             n_generations: the number of generations simulated')
+    parser.add_argument('-apobec_rate', default=1, type=int,
+                        help='change in G-to-A mutation rate due to APOBEC')
+    args = parser.parse_args()
 
-    nr_mutations = patients[1].strip().split(' ')
-    nr_mutations = [int(i) for i in nr_mutations]
 
-    sample_sizes = patients[3].strip().split(' ')
-    sample_sizes = [int(i) for i in sample_sizes]
 
-    apobec = patients[5].strip().split(' ')
-    apobec = [int(i) for i in apobec]
+    settings = args.o[0]
+
+    action = args.action
+    apobec_rate = args.apobec_rate
+
+    if args.p is not None:
+        patient_file = args.p[0]
+        with open(patient_file) as f:
+            patients = f.readlines()
+
+        nr_mutations = patients[1].strip().split(' ')
+        nr_mutations = [int(i) for i in nr_mutations]
+
+        sample_sizes = patients[3].strip().split(' ')
+        sample_sizes = [int(i) for i in sample_sizes]
+
+        apobec = patients[5].strip().split(' ')
+        apobec = [int(i) for i in apobec]
+    else:
+        if args.samples is not None:
+            sample_sizes = args.samples
+        else:
+            sample_sizes = [10]
+        if args.muts is not None:
+            nr_mutations =  args.muts
+        else:
+            nr_mutations = [10]
+
+        if args.apobec is not None:
+            apobec = args.apobec
+        else:
+            apobec = [0]
 
     simulation  = recreate_dataset(sample_sizes,nr_mutations,apobec,
                                    apobec_rate=apobec_rate,
@@ -148,5 +188,6 @@ if __name__ == '__main__':
     if action == 'shared_stats': #todo: prettier print
         for i in simulation:
             print i
-    if action == 'n_generations':
+
+    if (action == 'n_generations') or (action == 'fasta'):
         print simulation

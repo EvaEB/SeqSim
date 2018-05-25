@@ -53,7 +53,11 @@ class progress_plot():
 
 def run(scenario,scenario_settings,organism_settings):
     scenario = scenario.split('_')[0]
-    if scenario == 'VirusPassaging':
+    if scenario == 'SimpleSim':
+        import simple_sim
+        fasta = simple_sim.run(scenario_settings,organism_settings)
+
+    elif scenario == 'VirusPassaging':
         import virus_passaging
         fasta = virus_passaging.run(scenario_settings,organism_settings)
     elif scenario == 'RecreateDataset':

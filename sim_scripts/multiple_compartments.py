@@ -112,14 +112,21 @@ def run(scenario_settings,organism_settings):
                                 R0=scenario_settings['R0'],
                                 max_pop=scenario_settings['max_pop'])
 
-    for i in range(scenario_settings['n_gen']):
-        sim.new_generation()
+    if type(scenario_settings['sampling_amount']) is int:
+        n_seq = [scenario_settings['sampling_amount']]*scenario_settings['n_comparments']
+    else:
+        n_seq = scenario_settings['sampling_amount']
 
-    n_seq = 10
     fasta = ''
-    for s in sim.sims:
-        print s.n_seq
-        fasta += s.current_gen.to_fasta(n_seq=n_seq,description=s.settings['name'])
+
+    for i in range(scenario_settings['n_gen']):
+        print i
+        sim.new_generation()
+        if i+1 in scenario_settings['sampling_times']:
+            for j,s in enumerate(sim.sims):
+                fasta += s.current_gen.to_fasta(n_seq=n_seq[j],
+                                                description='-{}-gen{}'.format(s.settings['name'],i+1))
+
     return fasta
 
 if __name__ == '__main__':

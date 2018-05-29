@@ -157,6 +157,8 @@ class Simulation(object):
 
 
     def new_mutations_per_seq(self):
+        '''select the number of mutations that will happen for the next 1000
+        mutated sequences. implemented for increased efficiency'''
         return iter(np.random.binomial(self.sequence.len,self.settings['mut_rate'],1000))
 
     def __str__(self):
@@ -237,6 +239,7 @@ class Simulation(object):
         return fitness
 
     def get_fitness_effect(self, location, target_base):
+        ''' returns the fitness effect of a mutation at location to target_base '''
         return self.fitness_table[target_base,location]
 
     def get_nr_offspring(self, sequence_id, return_fitness=False):
@@ -281,9 +284,8 @@ class Simulation(object):
                         if (self.settings['ga_increase'] < 1) or random.random() < (1.0/self.settings['ga_increase'] ):
                             pop.add_change(seq_id, where, new_base)
                             success_mut += 1
-#    @profile
+
     def new_generation(self,dieout=False):
-        #print sys.getsizeof(self.current_gen.changes)
         """create a new generation in the simulation"""
         self.effective_pop = 0
         self.gen += 1
@@ -390,9 +392,12 @@ class Population():
         return string
 
     def copy(self):
+        ''' create a deep copy of the population'''
         return Population(self.sim,self.changes,self.changed,self.n_seq)
 
     def print_sample(self, seq_ids):
+        ''' print a summary of the mutation that have occured in all seq_ids in
+        the format: #mutID (from-pos-to)\tsequence\tpatient\n'''
         string = '#mutID (from-pos-to)\tsequence\tpatient\n'
         for i in range(self.n_seq):
             if i in self.changed and i in seq_ids:
@@ -404,7 +409,10 @@ class Population():
                                                                              seq=i,
                                                                              patient=self.sim.settings['name'])
         print string
+
     def sample_to_string(self, seq_ids):
+        ''' return a summary of the mutation that have occured in all seq_ids in
+        the format: #mutID (from-pos-to)\tsequence\tpatient\n'''
         string = '#mutID (from-pos-to)\tsequence\tpatient\n'
         for i in range(self.n_seq):
             if i in self.changed and i in seq_ids:
@@ -418,6 +426,7 @@ class Population():
         return string
 
     def get_sample(self, sample_size):
+        ''' get a random sample of size sample_size sequences from the population '''
         try:
             return np.random.choice(self.n_seq,size=int(sample_size),replace=False)
         except ValueError:
@@ -425,12 +434,16 @@ class Population():
 
 
     def delete_sequence(self, ID):
+        ''' delete sequence with sequence ID from the population '''
         self.n_seq-=1
         if self.get_seq(ID) is not None:
             self.changed.remove(ID)
             del self.changes[ID]
 
     def add_sequence(self, changes=None):
+        ''' add a sequence, optionally with certain changes (as a numpy array
+        with seqID, location of mutation, mutated target base, ancestor seq ID
+        in a row per change), to the population'''
         self.n_seq += 1
         if changes is not None:
             self.changed.add(self.n_seq-1)
@@ -439,6 +452,7 @@ class Population():
         return self.n_seq-1
 
     def add_change(self, seq_id, pos, target):
+        ''' add a change to new base 'target' to seq_id at position pos'''
         if seq_id in self.changed:
             #add to existing changes list
             if pos in self.changes[seq_id][:, 0]:
@@ -451,12 +465,29 @@ class Population():
             self.changes[seq_id] = np.array([[pos, target]])
 
     def get_base(self, seq_id, pos):
+        ''' get the current base at position pos in sequence with id seq_id '''
         if seq_id in self.changed:
             if pos in self.changes[seq_id][:, 0]:
                 return self.changes[seq_id][self.changes[seq_id][:, 0] == pos, 1]
         return self.sim.sequence[pos]
 
     def stats(self):
+        ''' return a list of stats about the population:
+
+        * n_seq: the total number of sequences in the current generation
+
+        * unmutated: the number of unmutated sequences
+
+        * total_mutations: the number of mutations in total
+
+        * unique_mutations: the length of the set of all mutations
+
+        * majority_mutations: the number of mutations that reached majority
+
+        * max_fraction: the highest fraction reached by a mutation
+
+        * GA_rate: the fraction of mutations that are G-to-A
+        '''
         stats = {}
         stats['n_seq'] = self.n_seq
         stats['unmutated'] = self.n_seq-len(self.changes)
@@ -487,6 +518,20 @@ class Population():
 
 
     def to_fasta(self, seq_ids=[], n_seq=None, description='',progress=False):
+        '''
+        convert (part of) the population to fasta-format.
+        without any arguments, all sequences in the population will be returned.
+
+        * seq_ids: list of sequence IDs to convert to fasta-format
+
+        * n_seq: number of sequences to convert to fasta-format (random draw
+        from population). This number will be ignored if seq_ids is given
+
+        * description: description of the sequences, will be added after the
+        sequenceID in the header of each sequence
+
+        * progress [True/False]: display a progress bar?
+        '''
         string = ''
         if len(seq_ids) == 0:
             if n_seq is None or n_seq > self.n_seq:
@@ -505,6 +550,7 @@ class Population():
         return string
 
     def consensus_sequence(self):
+        ''' return the consensus sequence of the population'''
         seq = deepcopy(self.sim.sequence)
         all_mutations = np.vstack(self.changes.values())
         all_mutations = [tuple(row) for row in all_mutations]
@@ -516,12 +562,19 @@ class Population():
         return seq
 
     def get_seq(self, sequence_id):
+        ''' get the changes in the sequence with id sequence_id'''
         if sequence_id in self.changed:
             return self.changes[sequence_id]
         else:
             return None
 
     def Hamming_distance(self,simulation_settings,sample,action='mean'):
+        '''
+        calculate the inter-sequence hamming distances in a sample.
+        if action is 'mean', return the mean hamming distance,
+        if action is 'Poisson_fit', return the poisson fit for the time since
+        infection from the distribution of hamming distances as presented in Lee et al, 2010
+        '''
         HDs = []
         for i in sample:
             for j in sample:

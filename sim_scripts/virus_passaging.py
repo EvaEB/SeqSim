@@ -91,7 +91,7 @@ if __name__ == '__main__':
     import ast
     #parse command line arguments
     parser = argparse.ArgumentParser(description='simulation of a virus passaging experiment')
-    parser.add_argument('-n', type=int,
+    parser.add_argument('-n', type=int,default=10,
                         help='number of transfers to run the simulation for')
     parser.add_argument('-gen',type=int,default=2,
                         help='number of generations per transfer, defaults to 2')
@@ -105,7 +105,7 @@ if __name__ == '__main__':
                         help='list of maximum population sizes for each population, \
                               or single value (use same max pop size for all populations),\
                               defaults to 10000 per population')
-    parser.add_argument('-transfer',nargs='+',default=0.01,type=float,
+    parser.add_argument('-transfer',nargs='+',default=1,type=float,
                         help='list of transfer proportions for each population, \
                               or single value (use same transfer proportion for all populations),\
                               defaults to 0.01 per population')
@@ -113,11 +113,11 @@ if __name__ == '__main__':
                         help='migration rate matrix, \
                               or single value (use migration rate between all populations),\
                               defaults to no migration')
-    parser.add_argument('-sampling',nargs='+',default=0,type=int,
+    parser.add_argument('-sampling',nargs='+',default=[0],type=int,
                         help='list of sampling sizes for each population, \
                               or single value (use same sampling size for all populations),\
                               defaults to no sampling')
-    parser.add_argument('-events',default=None,type=str,
+    parser.add_argument('-events',default='',type=str,
                         help='list of events (changes in parameters) during simulation, \
                             format: "[passage number] [parameter to change] [new values] : \
                             [passage number] [parameters to change] [new values] : ..."')
@@ -146,13 +146,14 @@ if __name__ == '__main__':
 
     events = [[],[],[]]
     for i in args.events.split(':'):
-        fields = i.split()
-        events[0].append(int(fields[0]))
-        events[1].append(fields[1])
-        if '.' in i:
-            events[2].append([float(i) for i in fields[2:]])
-        else:
-            events[2].append([int(i) for i in fields[2:]])
+        if len(i) > 0:
+            fields = i.split()
+            events[0].append(int(fields[0]))
+            events[1].append(fields[1])
+            if '.' in i:
+                events[2].append([float(i) for i in fields[2:]])
+            else:
+                events[2].append([int(i) for i in fields[2:]])
     settings['events'] = events
 
 

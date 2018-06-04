@@ -86,9 +86,76 @@ def run(scenario_settings,organism_settings):
 
 
 if __name__ == '__main__':
-    with open('/home/eva/code/SeqSim/seq_sim/simulation_settings/phix174') as sim_settings:
-        with open('/home/eva/code/SeqSim/sim_scripts/settings_files/VirusPassaging_control') as pas_settings:
-            passaging = passaging(yaml.safe_load(sim_settings),yaml.safe_load(pas_settings))
+    import argparse
+    import numpy as np
+    import ast
+    #parse command line arguments
+    parser = argparse.ArgumentParser(description='simulation of a virus passaging experiment')
+    parser.add_argument('-n', type=int,
+                        help='number of transfers to run the simulation for')
+    parser.add_argument('-gen',type=int,default=2,
+                        help='number of generations per transfer, defaults to 2')
+    parser.add_argument('-o', nargs=1,default = 'HIV',
+                        help='organism simulation settings to use')
+    parser.add_argument('-init',nargs='+',default=[1],type=int,
+                        help='list of initial population sizes for each population, \
+                              or single value (use same initial pop size for all populations),\
+                              defaults to 1 per population')
+    parser.add_argument('-pop',nargs='+',default=[10000],type=int,
+                        help='list of maximum population sizes for each population, \
+                              or single value (use same max pop size for all populations),\
+                              defaults to 10000 per population')
+    parser.add_argument('-transfer',nargs='+',default=0.01,type=float,
+                        help='list of transfer proportions for each population, \
+                              or single value (use same transfer proportion for all populations),\
+                              defaults to 0.01 per population')
+    parser.add_argument('-mig',default='[[0,0],[0,0]]',type=str,
+                        help='migration rate matrix, \
+                              or single value (use migration rate between all populations),\
+                              defaults to no migration')
+    parser.add_argument('-sampling',nargs='+',default=0,type=int,
+                        help='list of sampling sizes for each population, \
+                              or single value (use same sampling size for all populations),\
+                              defaults to no sampling')
+    parser.add_argument('-events',default=None,type=str,
+                        help='list of events (changes in parameters) during simulation, \
+                            format: "[passage number] [parameter to change] [new values] : \
+                            [passage number] [parameters to change] [new values] : ..."')
 
-    for i in range(3):
-        passaging.next_passage()
+    args = parser.parse_args()
+
+    settings = {}
+
+    settings['n_transfer'] = args.n
+
+    settings['pop_size'] = args.init
+
+    settings['max_pop'] = args.pop
+
+    settings['n_gen_per_transfer'] = args.gen
+
+    settings['transfer_prop'] = args.transfer
+
+    print args.mig
+    if '[' not in args.mig:
+        settings['migration'] = np.ones([len(args.init)]*2)*float(args.mig[0])
+    else:
+        settings['migration'] = ast.literal_eval(args.mig)
+
+
+    settings['sampling'] = args.sampling
+
+    events = [[],[],[]]
+    for i in args.events.split(':'):
+        fields = i.split()
+        events[0].append(int(fields[0]))
+        events[1].append(fields[1])
+        if '.' in i:
+            events[2].append([float(i) for i in fields[2:]])
+        else:
+            events[2].append([int(i) for i in fields[2:]])
+    settings['events'] = events
+
+
+    #run scenario
+    print run(settings, args.o)

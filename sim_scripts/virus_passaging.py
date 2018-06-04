@@ -136,7 +136,6 @@ if __name__ == '__main__':
 
     settings['transfer_prop'] = args.transfer
 
-    print args.mig
     if '[' not in args.mig:
         settings['migration'] = np.ones([len(args.init)]*2)*float(args.mig[0])
     else:

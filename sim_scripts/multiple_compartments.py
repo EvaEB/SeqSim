@@ -168,7 +168,7 @@ if __name__ == '__main__':
                         help='maximum population per compartment')
     parser.add_argument('-st',nargs='+',default = None,type=int,
                         help='sampling times per compartment,defaults to last')
-    parser.add_argument('-sa', nargs='+',default=10,
+    parser.add_argument('-sa', nargs='+',default=10,type=int,
                         help='sampling amount per compartment,defaults to 10')
 
     args = parser.parse_args()
@@ -179,11 +179,13 @@ if __name__ == '__main__':
     settings['n_gen'] = args.ng
 
     if '[' not in args.mig:
-        settings['migration'] = np.ones([len(args.init)]*2)*float(args.mig[0])
+        settings['migration'] = np.ones([len(args.ninit)]*2)*float(args.mig[0])
     else:
         settings['migration'] = ast.literal_eval(args.mig)
 
+    print args.sa
     settings['sampling_amount'] = args.sa
+
     if args.st is None:
         settings['sampling_times'] = [args.ng]
     else:
@@ -203,5 +205,5 @@ if __name__ == '__main__':
 
     if args.maxpop is not None:
         settings['max_pop'] = args.maxpop
-        
+
     print run(settings,  args.o)

@@ -88,6 +88,8 @@ class Seq(seq_sim.Seq):
         self.tag_len = tag_len
 
     def get_tag(self,number,to_return='list'):
+        '''get the translation of the tag into a list of numbers
+        (``return = 'list'``) or as a string (``return = 'seq'``)'''
         if to_return == 'seq':
             bases = 'ACGT'
             tag = ''
@@ -102,6 +104,7 @@ class Seq(seq_sim.Seq):
         return tag
 
     def to_tag(self,lst):
+        '''get the tag number from a list of bases'''
         number = 0
         power = 0
         for i in lst[::-1]:

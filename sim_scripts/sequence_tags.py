@@ -64,7 +64,8 @@ class Population(seq_sim.Population):
     def __init__(self,simulation,tags=None,**kwargs):
         seq_sim.Population.__init__(self,simulation,**kwargs)
         if tags is None:
-            self.tags = np.random.choice(range(len(self.sim.sequence.tag_dist)),self.n_seq,p=self.sim.sequence.tag_dist)
+            pos_tags = np.random.choice(range(4**self.sim.sequence.tag_len),len(self.sim.sequence.tag_dist))
+            self.tags = np.random.choice(pos_tags,self.n_seq,p=self.sim.sequence.tag_dist)
         else:
             self.tags = tags
 
@@ -113,8 +114,11 @@ class Seq(seq_sim.Seq):
         return number
 
 if __name__ == '__main__':
-    tag_dist = np.ones(4**8)/(4.0**8)
-    sim = Simulation(tag_dist,n_seq_init=100)
+    tag_dist = scats.expon.pdf(range(1000),scale=400)
+    np.random.shuffle(tag_dist)
+    tag_dist = tag_dist/sum(tag_dist)
+
+    sim = Simulation(tag_dist,n_seq_init=10000)
     for i in range(10):
         print '#', i
         sim.new_generation(new_gen=Population(sim,tags=[],n_seq=0))

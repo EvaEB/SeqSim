@@ -28,7 +28,7 @@ class Seq(object):
 
     * base_dist: list of length 4, base distribution in order A-G-T-C
     '''
-    def __init__(self, seq_len=100, base_dist=None, seq=''):
+    def __init__(self, seq_len=100, base_dist=None, seq='',**kwargs):
         self.translation = 'AGTC'
         if seq == '':
             self.generate_seq(seq_len, base_dist)
@@ -255,7 +255,7 @@ class Simulation(object):
             return np.random.poisson(fitness*R0), fitness
         return np.random.poisson(fitness*R0)
 
-    def mutate_seq(self, pop, seq_id):
+    def mutate_seq(self, pop, seq_id_new,seq_id_old):
         """mutates a sequence (with existing mutations) of length N, according to
         the per base mutation rate"""
         try:
@@ -268,7 +268,7 @@ class Simulation(object):
 
             while success_mut < nr_mut: #do the mutations one by one
                 where = random.randrange(0, self.sequence.len) #draw where the mutation will take place
-                base = self.current_gen.get_base(seq_id, where)
+                base = self.current_gen.get_base(seq_id_old, where)
                 rand_nr = random.random() #draw a random nr for base substitution
 
                 to_check = self.settings['subs_matrix'][int(base), :] #get the cumulative distribution
@@ -278,18 +278,19 @@ class Simulation(object):
 
                     if (base == 1) and (new_base == 0): #G-A mutations
                         if (self.settings['ga_increase']> 1) or (random.random() < self.settings['ga_increase']):
-                            pop.add_change(seq_id, where, new_base)
+                            pop.add_change(seq_id_new, where, new_base)
                             success_mut += 1
                     elif (base != 1) or (new_base != 0): #not G-A mutation
                         if (self.settings['ga_increase'] < 1) or random.random() < (1.0/self.settings['ga_increase'] ):
-                            pop.add_change(seq_id, where, new_base)
+                            pop.add_change(seq_id_new, where, new_base)
                             success_mut += 1
 
-    def new_generation(self,dieout=False):
+    def new_generation(self,new_gen=None,dieout=False):
         """create a new generation in the simulation"""
         self.effective_pop = 0
         self.gen += 1
-        new_generation = Population(self, n_seq=0)
+        if new_gen is None:
+            new_gen = Population(self, n_seq=0)
         all_offspring = []
         fitnesses = [0]*self.current_gen.n_seq
         weights = [0]*self.current_gen.n_seq
@@ -325,20 +326,20 @@ class Simulation(object):
                 ancestor = i
                 self.effective_pop += 1
                 changes = self.current_gen.get_seq(i)
-            seq_id = new_generation.add_sequence(changes)
+            seq_id = new_gen.add_sequence(changes)
 
-            self.mutate_seq(new_generation, seq_id)
+            self.mutate_seq(new_gen, seq_id, i)
 
 
-        if new_generation.n_seq == 0 and not dieout :
+        if new_gen.n_seq == 0 and not dieout :
             print 'died out'
             n_gen = self.gen
             self = self.copy(self.settings['name'])
             for i in range(n_gen):
-                self.new_generation()
+                self.new_gen()
 
         else:
-            self.current_gen = new_generation
+            self.current_gen = new_gen
         self.n_seq = self.current_gen.n_seq
 
 
@@ -364,7 +365,7 @@ class Simulation(object):
 
 class Population():
     """class representing a population beloning to a simulation """
-    def __init__(self, simulation, changes=None, changed=None, n_seq=1):
+    def __init__(self, simulation, changes=None, changed=None, n_seq=1,**kwargs):
         if changes is None:
             self.changed = set([])
             self.changes = {}

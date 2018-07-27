@@ -336,7 +336,7 @@ class Simulation(object):
             n_gen = self.gen
             self = self.copy(self.settings['name'])
             for i in range(n_gen):
-                self.new_gen()
+                self.new_generation()
 
         else:
             self.current_gen = new_gen

@@ -4,11 +4,15 @@ from collections import Counter
 import matplotlib.pyplot as plt
 import random
 import scipy.stats as scats
+import os
 
 class Simulation(seq_sim.Simulation):
-    def __init__(self,tag_dist=None,tag_len=8,n_seq_init=1,**kwargs):
-        self.sequence = Seq(tag_dist,tag_len,**kwargs)
-        seq_sim.Simulation.__init__(self,sequence=self.sequence,n_seq_init=n_seq_init,**kwargs)
+    def __init__(self,simulation_settings='HIV',tag_dist=None,tag_len=8,n_seq_init=1,**kwargs):
+        seq_sim.Simulation.__init__(self,simulation_settings=simulation_settings,
+                                    n_seq_init=n_seq_init,**kwargs)
+
+        self.sequence = Seq(tag_dist,tag_len,seq_len=self.settings['seq_len'],
+                            base_dist=self.settings['basedist'],**kwargs)
         self.current_gen = Population(self,n_seq=int(self.settings['n_seq_init']),**kwargs)
         self.mutations_per_tag = self.new_mutations_per_tag()
 
@@ -64,7 +68,7 @@ class Population(seq_sim.Population):
     def __init__(self,simulation,tags=None,**kwargs):
         seq_sim.Population.__init__(self,simulation,**kwargs)
         if tags is None:
-            pos_tags = np.random.choice(range(4**self.sim.sequence.tag_len),len(self.sim.sequence.tag_dist))
+            pos_tags = np.random.choice(range(4**self.sim.sequence.tag_len),len(self.sim.sequence.tag_dist),replace=False)
             self.tags = np.random.choice(pos_tags,self.n_seq,p=self.sim.sequence.tag_dist)
         else:
             self.tags = tags
@@ -114,14 +118,47 @@ class Seq(seq_sim.Seq):
         return number
 
 if __name__ == '__main__':
-    tag_dist = scats.expon.pdf(range(1000),scale=400)
-    np.random.shuffle(tag_dist)
+    tag_dist = scats.expon.pdf(range(1000),scale=400) # -->exponential
+    #tag_dist = np.ones(1000)
+    #np.random.shuffle(tag_dist)
     tag_dist = tag_dist/sum(tag_dist)
 
-    sim = Simulation(tag_dist,n_seq_init=10000)
-    for i in range(10):
-        print '#', i
-        sim.new_generation(new_gen=Population(sim,tags=[],n_seq=0))
+    pop_size = 100000
+    transfer_prop = 0.05
+    n_transfer = 200
+    div = 0.001
+    scenario='exponential'#'neutral'#'exponential'
+
+    sim = Simulation(simulation_settings='phix174',tag_dist=tag_dist,
+                     n_seq_init=pop_size,model='neutral',max_pop=pop_size)
+
+    sim.settings['R0'] = 110
+
+    #diversify sequences
+    for i in range(sim.current_gen.n_seq):
+        #how many changes
+        n_change = np.random.poisson(div*sim.sequence.len)
+        for change in range(n_change):
+            where = int(np.random.uniform(0,sim.sequence.len))
+            while True:
+                new = int(np.random.uniform(0,4))
+                if new != sim.sequence[where]:
+                    break
+            sim.current_gen.add_change(i, where, new)
+
+
+    for i in range(n_transfer):
+        print '#transfer', i
         counts = Counter(sim.current_gen.tags)
         for i in counts:
             print i, counts[i]
+        sim.new_generation(new_gen=Population(sim,tags=[],n_seq=0))
+        sim.settings['max_pop'] = pop_size
+
+        sim.new_generation(new_gen=Population(sim,tags=[],n_seq=0))
+        sim.settings['max_pop'] =transfer_prop*sim.current_gen.n_seq
+
+    print '#transfer', n_transfer
+    counts = Counter(sim.current_gen.tags)
+    for i in counts:
+        print i, counts[i]

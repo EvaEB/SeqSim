@@ -26,6 +26,7 @@ class Simulation(seq_sim.Simulation):
     def mutate_seq(self,pop,seq_id_new,seq_id_old):
         #do the original mutation as before
         seq_sim.Simulation.mutate_seq(self,pop, seq_id_new,seq_id_old)
+        #print self.current_gen.get_seq(seq_id_old), pop.get_seq(seq_id_new)
         tag = self.current_gen.tags[seq_id_old]
         #add new functionality: mutate tag
         try:
@@ -77,9 +78,26 @@ class Population(seq_sim.Population):
         return self.sim.sequence.get_tag(self.tags[seqID])
 
     def add_sequence(self,tag=-1,changes=None):
-        new_seq_id = seq_sim.Population.add_sequence(self,changes)
+        #print changes
+        new_seq_id = seq_sim.Population.add_sequence(self,changes=changes)
         self.tags.append(tag)
         return new_seq_id
+
+    def print_sample(self,seq_ids):
+        ''' print a summary of the mutation that have occured in all seq_ids in
+        the format: #mutID (from-pos-to)\tsequence\tpatient\n'''
+        string = '#mutID (from-pos-to)\tsequence\tpatient\n'
+        for i in range(self.n_seq):
+            if i in self.changed and i in seq_ids:
+                for j in self.changes[i]:
+                    pos = j[0]
+                    string += '{orig}-{pos}-{to}\t{seq}\t{patient}\t{tag}\n'.format(orig=self.sim.sequence[pos],
+                                                                                    pos=pos,
+                                                                                    to=j[1],
+                                                                                    seq=i,
+                                                                                    patient=self.sim.settings['name'],
+                                                                                    tag = self.tags[i])
+        print string
 
 
 
@@ -117,20 +135,40 @@ class Seq(seq_sim.Seq):
             power+=1
         return number
 
-if __name__ == '__main__':
-    tag_dist = scats.expon.pdf(range(1000),scale=400) # -->exponential
-    #tag_dist = np.ones(1000)
-    #np.random.shuffle(tag_dist)
-    tag_dist = tag_dist/sum(tag_dist)
+def output_tags(sim,transfer):
+    print '#transfer', transfer
+    counts = Counter(sim.current_gen.tags)
+    for i in counts:
+        print i, counts[i]
 
-    pop_size = 100000
-    transfer_prop = 0.05
-    n_transfer = 200
-    div = 0.001
-    scenario='exponential'#'neutral'#'exponential'
+def output_fitness_per_tag(sim,transfer):
+    #print '#',transfer
+    tags = {}
+    # changes = []
+    for i in range(sim.current_gen.n_seq):
+        fitness =  sim.get_nr_offspring(i,return_fitness=True)[1]
+        tag = sim.current_gen.tags[i]
+        try:
+            tags[tag].append(fitness)
+        except KeyError:
+            tags[tag] = [fitness]
+        # try:
+        #     changes.append(len(sim.current_gen.get_seq(i)))
+        # except TypeError:
+        #     changes.append(0)
 
+    for i in tags:
+        print transfer, i, np.mean(tags[i]), np.max(tags[i]),np.min(tags[i]),len(tags[i])
+
+def output_seqs(sim,transfer):
+    if transfer in [99,199]:
+        print '#',transfer
+        sim.current_gen.print_sample(sim.current_gen.get_sample(sim.current_gen.n_seq))
+
+
+def run_sim(tag_dist, pop_size,transfer_prop,n_transfer,div,scenario,output,progress=False):
     sim = Simulation(simulation_settings='phix174',tag_dist=tag_dist,
-                     n_seq_init=pop_size,model='neutral',max_pop=pop_size)
+                     n_seq_init=pop_size,model=scenario,max_pop=pop_size)
 
     sim.settings['R0'] = 110
 
@@ -146,19 +184,77 @@ if __name__ == '__main__':
                     break
             sim.current_gen.add_change(i, where, new)
 
-
+    if progress:
+        pbar = tqdm.tqdm(total=n_transfer)
     for i in range(n_transfer):
-        print '#transfer', i
-        counts = Counter(sim.current_gen.tags)
-        for i in counts:
-            print i, counts[i]
+        output(sim,i)
         sim.new_generation(new_gen=Population(sim,tags=[],n_seq=0))
         sim.settings['max_pop'] = pop_size
 
         sim.new_generation(new_gen=Population(sim,tags=[],n_seq=0))
         sim.settings['max_pop'] =transfer_prop*sim.current_gen.n_seq
+        if progress:
+            pbar.update(1)
+    if progress:
+        pbar.close()
 
-    print '#transfer', n_transfer
-    counts = Counter(sim.current_gen.tags)
-    for i in counts:
-        print i, counts[i]
+    output(sim, i+1)
+    return sim
+
+def output_all(sim, transfer):
+    for seqID in range(len(sim.current_gen)):
+        changes = sim.current_gen.get_seq(seqID)
+        if changes is not None:
+            changes_string = '/'.join(['{}-{}'.format(i[0],i[1]) for i in changes])
+        else:
+            changes_string = ''
+        data = {'seqID': seqID,
+                'tag': sim.current_gen.tags[seqID],
+                'fitness': sim.get_nr_offspring(seqID,return_fitness=True)[1],
+                'transfer': transfer,
+                'experimentID':experimentID,
+                'changes': changes_string
+               }
+        print '{seqID},{tag},{fitness},{transfer},{experimentID},{changes}'.format(**data)
+
+if __name__ == '__main__':
+    import sys
+    import tqdm
+
+    if sys.argv[1] in ['help','-h','h']:
+        print 'usage: python sequence_tags.py MFED nBarcodes distBarcodes popSize diverseStart transferProp'
+        exit()
+    elif sys.argv[1] == 'neutral':
+        scenario = 'neutral'
+    elif sys.argv[1] == 'selection':
+        scenario = 'exponential'
+    else:
+        print 'unknown MFED'
+        exit()
+
+    n_tags = int(sys.argv[2])
+
+    if sys.argv[3] == 'exponential':
+        tag_dist = scats.expon.pdf(range(n_tags),scale=n_tags/3) # -->exponential
+    elif sys.argv[3] == 'uniform':
+        tag_dist = np.ones(n_tags)
+    else:
+        raise('unknown tag distribution')
+    tag_dist = tag_dist/sum(tag_dist)
+
+    pop_size = int(sys.argv[4])
+
+    div = float(sys.argv[5]) #before setting this != 0: make sure diversified sequences don't have too large fitness effects!!!!!!!
+    if div != 0:
+        print 'diversity of 0 not implemented yet!!'
+        exit()
+
+    transfer_prop = float(sys.argv[6])
+
+    n_transfer = 200
+
+    experimentID = '_'.join(sys.argv[1:])
+    #run_sim(tag_dist, pop_size,transfer_prop,n_transfer,div,scenario,output_tags)
+    #sim=run_sim(tag_dist, pop_size,transfer_prop,n_transfer,div,scenario,output_fitness_per_tag)
+    #run_sim(tag_dist, pop_size,transfer_prop,n_transfer,div,scenario,output_seqs,progress=False)
+    sim = run_sim(tag_dist, pop_size, transfer_prop, n_transfer, div, scenario, output_all)

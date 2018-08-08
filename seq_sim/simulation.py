@@ -326,7 +326,7 @@ class Simulation(object):
                 ancestor = i
                 self.effective_pop += 1
                 changes = self.current_gen.get_seq(i)
-            seq_id = new_gen.add_sequence(changes)
+            seq_id = new_gen.add_sequence(changes=changes)
 
             self.mutate_seq(new_gen, seq_id, i)
 

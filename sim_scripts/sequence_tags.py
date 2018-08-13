@@ -166,9 +166,14 @@ def output_seqs(sim,transfer):
         sim.current_gen.print_sample(sim.current_gen.get_sample(sim.current_gen.n_seq))
 
 
-def run_sim(tag_dist, pop_size,transfer_prop,n_transfer,div,scenario,output,progress=False):
-    sim = Simulation(simulation_settings='phix174',tag_dist=tag_dist,
-                     n_seq_init=pop_size,model=scenario,max_pop=pop_size)
+def run_sim(tag_dist, pop_size,transfer_prop,n_transfer,div,scenario,output,progress=False,param=None):
+    if param is None:
+        sim = Simulation(simulation_settings='phix174',tag_dist=tag_dist,
+                         n_seq_init=pop_size,model=scenario,max_pop=pop_size)
+    else:
+        sim = Simulation(simulation_settings='phix174',tag_dist=tag_dist,
+                         n_seq_init=pop_size,model=scenario,max_pop=pop_size,
+                         parameters=param)
 
     sim.settings['R0'] = 110
 
@@ -202,20 +207,38 @@ def run_sim(tag_dist, pop_size,transfer_prop,n_transfer,div,scenario,output,prog
     return sim
 
 def output_all(sim, transfer):
+    count = 0
+    changes_old = ''
+    tag_old= ''
     for seqID in range(len(sim.current_gen)):
         changes = sim.current_gen.get_seq(seqID)
         if changes is not None:
             changes_string = '/'.join(['{}-{}'.format(i[0],i[1]) for i in changes])
         else:
             changes_string = ''
-        data = {'seqID': seqID,
-                'tag': sim.current_gen.tags[seqID],
-                'fitness': sim.get_nr_offspring(seqID,return_fitness=True)[1],
-                'transfer': transfer,
-                'experimentID':experimentID,
-                'changes': changes_string
-               }
-        print '{seqID},{tag},{fitness},{transfer},{experimentID},{changes}'.format(**data)
+        if (sim.current_gen.tags[seqID] == tag_old) and (changes_string == changes_old):
+            count+=1
+        else:
+            tag_old = sim.current_gen.tags[seqID]
+            changes_old = changes_string
+            data = {'count': count,
+                    'tag': sim.current_gen.tags[seqID],
+                    'fitness': sim.get_nr_offspring(seqID,return_fitness=True)[1],
+                    'transfer': transfer,
+                    'experimentID':experimentID,
+                    'changes': changes_string
+                   }
+            print '{count},{tag},{fitness},{transfer},{experimentID},{changes}'.format(**data)
+            count=1
+    data = {'count': count,
+            'tag': sim.current_gen.tags[seqID],
+            'fitness': sim.get_nr_offspring(seqID,return_fitness=True)[1],
+            'transfer': transfer,
+            'experimentID':experimentID,
+            'changes': changes_string
+           }
+    print '{count},{tag},{fitness},{transfer},{experimentID},{changes}'.format(**data)
+
 
 if __name__ == '__main__':
     import sys
@@ -228,6 +251,12 @@ if __name__ == '__main__':
         scenario = 'neutral'
     elif sys.argv[1] == 'selection':
         scenario = 'exponential'
+    elif sys.argv[1] == 'more_lethal':
+        scenario = 'exponential'
+        param = {'fl': 0.4,'fb': 0.2,'lb': 0.03,'fd': 0.4, 'ld': 0.21}
+    elif sys.argv[1] == 'more_ben':
+        scenario = 'exponential'
+        param = {'fl': 0.2,'fb': 0.4,'lb': 0.03,'fd': 0.4, 'ld': 0.21}
     else:
         print 'unknown MFED'
         exit()
@@ -246,7 +275,7 @@ if __name__ == '__main__':
 
     div = float(sys.argv[5]) #before setting this != 0: make sure diversified sequences don't have too large fitness effects!!!!!!!
     if div != 0:
-        print 'diversity of 0 not implemented yet!!'
+        print 'diversity diffferent from 0 not implemented yet!!'
         exit()
 
     transfer_prop = float(sys.argv[6])

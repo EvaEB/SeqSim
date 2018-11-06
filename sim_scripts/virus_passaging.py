@@ -9,8 +9,9 @@ virus passaging as the experiment in the liquid handling robot
 """
 #import optparse
 import seq_sim as sim
-#from tqdm import tqdm
+from tqdm import tqdm
 import yaml
+
 
 class passaging():
     def __init__(self, sim_settings, passaging_settings):
@@ -23,13 +24,16 @@ class passaging():
         names = iter(range(self.n_pop))
         for i in range(self.n_pop):
             self.sims.append(main_sim.copy(names.next(),n_seq=self.settings['pop_size'][i]))
-            self.sims[i].settings['max_pop'] = self.settings['max_pop'][i]
+            try:
+                self.sims[i].settings['max_pop'] = self.settings['max_pop'][i]
+            except TypeError:
+                self.sims[i].settings['max_pop'] = self.settings['max_pop']
         self.output = main_sim.current_gen.to_fasta(n_seq=1,description='consensus')
         self.cur_passage = 0
 
     def next_passage(self):
         self.cur_passage+=1
-        print self.cur_passage
+        #print self.cur_passage
         #handle events
         while self.cur_passage in self.settings['events'][0]:
             loc = self.settings['events'][0].index(self.cur_passage)
@@ -56,10 +60,16 @@ class passaging():
                                                    description=' - pop {} - transfer {} '.format(i,self.cur_passage))
 
             #change parameters for transfer
-            print pop.current_gen.n_seq
-            pop.settings['max_pop'] = self.settings['transfer_prop']*pop.current_gen.n_seq
+            #print pop.current_gen.n_seq
+            if 'transfer_amount' in self.settings:
+                pop.settings['max_pop'] = self.settings['transfer_amount']
+            else:
+                pop.settings['max_pop'] = self.settings['transfer_prop']*pop.current_gen.n_seq
             pop.new_generation()
-            pop.settings['max_pop'] = self.settings['max_pop'][i]
+            try:
+                pop.settings['max_pop'] = self.settings['max_pop'][i]
+            except TypeError:
+                pop.settings['max_pop'] = self.settings['max_pop']
 
         #handle migration
         if self.settings['migration'] is not None:
@@ -74,7 +84,7 @@ class passaging():
                             self.sims[to].current_gen.add_sequence(changed)
 
     def all_passages(self):
-        for passage in range(self.settings['n_transfer']):
+        for passage in tqdm(range(self.settings['n_transfer'])):
             self.next_passage()
 
 

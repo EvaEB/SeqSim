@@ -3,6 +3,7 @@
 ## installation
 First, make sure you have a working python installation (2.7), with the following packages installed
 * numpy
+* scipy
 * pyyaml
 * progressbar
 * Tqdm

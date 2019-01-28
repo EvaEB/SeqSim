@@ -174,7 +174,6 @@ def run_sim(tag_dist, pop_size,transfer_prop,n_transfer,div,scenario,output,prog
         sim = Simulation(simulation_settings='phix174',tag_dist=tag_dist,
                          n_seq_init=pop_size,model=scenario,max_pop=pop_size,
                          parameters=param)
-
     sim.settings['R0'] = 110
 
     #diversify sequences
@@ -257,6 +256,12 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'more_ben':
         scenario = 'exponential'
         param = {'fl': 0.2,'fb': 0.4,'lb': 0.03,'fd': 0.4, 'ld': 0.21}
+    elif sys.argv[1] == 'more_neutral':
+        scenario = 'exponential'
+        param = {'fl': 0.1,'fb': 0.3,'fn':0.3,'lb': 0.03,'fd': 0.3, 'ld': 0.21}
+    elif sys.argv[1] == 'no_beneficial':
+            scenario = 'exponential'
+            param = {'fl': 0.1,'fb': 0.0,'fn':0.6,'lb': 0,'fd': 0.3, 'ld': 0.21}
     else:
         print 'unknown MFED'
         exit()
@@ -286,4 +291,4 @@ if __name__ == '__main__':
     #run_sim(tag_dist, pop_size,transfer_prop,n_transfer,div,scenario,output_tags)
     #sim=run_sim(tag_dist, pop_size,transfer_prop,n_transfer,div,scenario,output_fitness_per_tag)
     #run_sim(tag_dist, pop_size,transfer_prop,n_transfer,div,scenario,output_seqs,progress=False)
-    sim = run_sim(tag_dist, pop_size, transfer_prop, n_transfer, div, scenario, output_all)
+    sim = run_sim(tag_dist, pop_size, transfer_prop, n_transfer, div, scenario, output_all,param=param)

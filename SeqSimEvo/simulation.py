@@ -303,7 +303,6 @@ class Simulation(object):
             fitnesses[i] = fitness
          #   temp = [i]*(n_offspring)
 
-
             #all_offspring += temp #make a list off the offspring per sequence
         #get average fitness of this generation
         self.average_fitness = np.mean(fitnesses)
@@ -314,9 +313,13 @@ class Simulation(object):
 
         if sum(weights) > self.settings['max_pop']:
             #reduce the population randomly to max_pop
-            all_offspring = sorted(np.random.choice(range(self.current_gen.n_seq),
-                                                    size=int(self.settings['max_pop']),
-                                                    p=np.array(weights,dtype=float)/sum(weights)))
+            try:
+                all_offspring = sorted(np.random.choice(range(self.current_gen.n_seq),
+                                                        size=int(self.settings['max_pop']),
+                                                        p=np.array(weights,dtype=float)/sum(weights)))
+            except TypeError:
+                print weights
+                np.array(weights,dtype=float)/sum(weights)
         else:
             all_offspring = [i for i,j in enumerate(weights) for k in xrange(j)]
         #actually create the next generation
@@ -600,12 +603,18 @@ class Population():
                 return np.nan
 
 if __name__ == '__main__':
-    settings = '/home/eva/code/SeqSim/seq_sim/simulation_settings/phix174' #sys.argv[1]
-    n_gen = 20#int(sys.argv[2])
+    #settings = '/home/eva/code/SeqSim/seq_sim/simulation_settings/phix174' #sys.argv[1]
+    n_gen = 200
 
-    sim = Simulation(settings)
+    pars = {'fl': 0.1,'mu': -0.25,'sigma': 0.15}
+    sim = Simulation(model='lognormal',
+                     parameters = pars,
+                     n_seq_init=1000,
+                     max_pop=10000,
+                     mut_rate=1e-5,
+                     seq_len=1000)
 
     for i in range(n_gen):
         sim.new_generation()
-
-    print sim.current_gen.Hamming_distance(sim.settings,sim.current_gen.get_sample(10),action='Poisson_fit')
+        if i%10 == 0:
+            print 'mean: {}'.format(sim.average_fitness)

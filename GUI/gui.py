@@ -13,13 +13,18 @@ def select():
     selection = app.getAllOptionBoxes()
 
     #display default settings organism
-    with open('../seq_sim/simulation_settings/'+selection['Organism']) as f:
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    dir_path_up = os.sep.join(dir_path.split(os.sep)[:-1])
+    sim_settings_path = dir_path_up+os.sep+'SeqSimEvo'+os.sep+'simulation_settings/'
+    scenario_settings_path = dir_path_up+os.sep+'Scenarios'+os.sep+'settings_files/'
+
+    with open(sim_settings_path+selection['Organism']) as f:
         OrgSettings = f.read()
     app.clearTextArea('OrgSet')
     app.setTextArea('OrgSet', OrgSettings)
 
     #display default settings Scenario
-    with open('settings_files/'+selection['Scenario']) as f:
+    with open(scenario_settings_path+selection['Scenario']) as f:
         ScenSettings = f.read()
     app.clearTextArea('ScenSet')
     app.setTextArea('ScenSet', ScenSettings)
@@ -66,10 +71,15 @@ def settings_press(btn):
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 with gui('SeqSim') as app:
-    Organism_options = os.listdir('../seq_sim/simulation_settings/')
+
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    dir_path_up = os.sep.join(dir_path.split(os.sep)[:-1])
+    sim_settings_path = dir_path_up+os.sep+'SeqSimEvo'+os.sep+'simulation_settings/'
+    Organism_options = os.listdir(sim_settings_path)
     app.addLabelOptionBox('Organism',Organism_options)
 
-    Scenario_options = os.listdir('settings_files/')
+    scenario_settings_path = dir_path_up+os.sep+'Scenarios'+os.sep+'settings_files/'
+    Scenario_options = os.listdir(scenario_settings_path)
     app.addLabelOptionBox('Scenario',Scenario_options)
 
     app.addButton('select',select)

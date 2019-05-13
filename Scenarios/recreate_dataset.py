@@ -6,7 +6,7 @@ Created on Wed Jul 19 14:29:00 2017
 @author: eva
 """
 
-import seq_sim as sim
+import SeqSimEvo as sim
 from collections import Counter
 import numpy as np
 import pickle

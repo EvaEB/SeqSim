@@ -8,7 +8,14 @@ Created on Tue Jul 11 15:13:13 2017
 virus passaging as the experiment in the liquid handling robot
 """
 #import optparse
-import seq_sim as sim
+import os
+import sys
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
+dir_path_up = os.sep.join(dir_path.split(os.sep)[:-1])
+sys.path.append(dir_path_up+os.sep+'SeqSimEvo')
+import SeqSimEvo as sim
+
 from tqdm import tqdm
 import yaml
 

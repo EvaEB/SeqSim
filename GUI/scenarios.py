@@ -1,3 +1,9 @@
+import os
+import sys
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
+dir_path_up = os.sep.join(dir_path.split(os.sep)[:-1])
+sys.path.append(dir_path_up+os.sep+'Scenarios')
 from virus_passaging import passaging
 
 import matplotlib.pyplot as plt
@@ -73,10 +79,3 @@ def run(scenario,scenario_settings,organism_settings):
         fasta = multiple_compartments.run(scenario_settings,organism_settings)
 
     return fasta
-
-if __name__ == '__main__':
-    #events =     [(10,'t',0.1),(20,'v',1e5)] #(time,eventtype, new value), events: t: tranfer prop change, v: total volume change
-    #skyline(events, plot=True, plot_freq=5,progress=True)
-    control(plot=True,plot_freq=10)
-    #migration()
-    #root()

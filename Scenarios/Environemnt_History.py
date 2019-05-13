@@ -1,14 +1,14 @@
-import seq_sim
+import SeqSimEvo as seq_sim
 import numpy as np
 from collections import Counter
 from copy import deepcopy
 from tqdm import tqdm
 
 class Simulation(seq_sim.Simulation):
-    def __init__(self,interactionTable=None,interactionFraction=0.3,**kwargs):
+    def __init__(self,interactionTable=None,interactionFraction=0.3, ratio=0.5,**kwargs):
         seq_sim.Simulation.__init__(self,**kwargs)
         if interactionTable is None:
-            self.interactionTable = self.generateInteractions(fraction=interactionFraction)
+            self.interactionTable = self.generateInteractions(fraction=interactionFraction, ratio=ratio)
         else:
             self.interactionTable = interactionTable
 
@@ -44,9 +44,17 @@ class Simulation(seq_sim.Simulation):
             if combi[0][0]>combi[1][0]:
                 combi = [combi[1],combi[0]]
             if np.random.random() < ratio:
-                combi.append(1)
+                #combi.append(1)
+                fit1 = self.get_fitness_effect(combi[0][0],combi[0][1])
+                fit2 = self.get_fitness_effect(combi[1][0],combi[1][1])
+                cur = fit1*fit2
+                new = 1+np.random.exponential(self.settings['parameters']['lb'])
+                if new>cur:
+                    combi.append(new)
+                else:
+                    combi.append(cur)
             else:
-                combi.append(-1)
+                combi.append(0)
             try:
                 combis[tuple(combi[0])].append(combi[1:])
             except KeyError:
@@ -60,23 +68,26 @@ class Simulation(seq_sim.Simulation):
         changes = self.current_gen.get_seq(sequence_id)
         fitness = 1
         if changes is not None:
-            for pos, base in zip(changes[:, 0], changes[:, 1]):
-                fitness *= (self.fitness_table[int(base), int(pos)])
-            if len(changes)>1:
-                sort = np.argsort(changes[:,0])
-                for i,change1 in enumerate(changes[sort]):
-                    if tuple(change1) in self.interactionTable:
-                        ch1 = [tuple(c[0]) for c in self.interactionTable[tuple(change1)]]
-                        chs2 = set([tuple(c) for c in changes[sort][i+1:]])
-                        interactions = set(ch1).intersection(chs2)
-                        for interaction in interactions:
-                            value = [self.interactionTable[tuple(change1)][i][-1] for i in range(len(ch1)) if ch1[i]==interaction]
-                            if value[-1] == -1:
-                                fitness = fitness/2 #TODO: hard coded effect, code differently!
-                            elif value[-1] == 1:
-                                fitness = fitness*2
-                            else:
-                                raise ValueError("value should be -1 or 1, but is {}".format(value[-1]))
+            #for pos, base in zip(changes[:, 0], changes[:, 1]):
+            #    fitness *= (self.fitness_table[int(base), int(pos)])
+            sort = np.argsort(changes[:,0])
+            already_done = []
+            for i,change1 in enumerate(changes[sort]):
+                if tuple(change1) in self.interactionTable:
+                    ch1 = [tuple(c[0]) for c in self.interactionTable[tuple(change1)]]
+                    chs2 = set([tuple(c) for c in changes[sort][i+1:]])
+                    interactions = set(ch1).intersection(chs2)
+                    for interaction in interactions:
+                        already_done += [tuple(change1),interaction]
+                        value = [self.interactionTable[tuple(change1)][i][-1] for i in range(len(ch1)) if ch1[i]==interaction]
+                        fitness*=np.product(value)
+                done=False
+                if len(already_done)>0:
+                    if tuple(change1) in already_done:
+                        done=True
+                if not done:
+                    fitness*=(self.fitness_table[int(change1[1]), int(change1[0])])
+
         if return_fitness:
             return np.random.poisson(fitness*R0), fitness
         return np.random.poisson(fitness*R0)
@@ -120,7 +131,7 @@ def run_custom():
     fraction = float(sys.argv[8])
 
     env1_1 = Simulation(name='env1_1',interactionFraction=interactionFraction,
-                        ratio=ratio,seq_len=9000)
+                        ratio=ratio,seq_len=500)
     sims = [env1_1]+[env1_1.copy('env1_'+str(i)) for i in range(2,6)]
     env2_1 = env1_1.copy('env2_1')
     env2_1.transform_fitnessTable(transform=[transformType,transformValue],fraction=fraction)
@@ -156,15 +167,15 @@ if __name__ == '__main__':
     resultfile = sys.argv[2]
     timingsfile = sys.argv[3]
 
-    env1_1 = Simulation(name='env1_1',interactionFraction=1,
-                        ratio=0,seq_len=9000)
+    env1_1 = Simulation(name='env1_1',interactionFraction=0.05,
+                        ratio=0,seq_len=500)
     sims = [env1_1]+[env1_1.copy('env1_'+str(i)) for i in range(2,6)]
     env2_1 = env1_1.copy('env2_1')
     #nv2_1.generateInteractions(float(sys.argv[4]),1)
     #env2_1.transform_fitnessTable(transform=['scramble',0],fraction=0.3)
-    env2_1.transform_fitnessTable(transform=['product',1.1],fraction=1)
-    env2_1.transform_fitnessTable(transform=['set',0],fraction=0.3)
-    env2_1.transform_fitnessTable(transform=['set',1],fraction=0.3)
+    #env2_1.transform_fitnessTable(transform=['product',1.1],fraction=1)
+    #env2_1.transform_fitnessTable(transform=['set',0],fraction=0.3)
+    #env2_1.transform_fitnessTable(transform=['set',1],fraction=0.3)
 
 
 
@@ -176,7 +187,7 @@ if __name__ == '__main__':
     f = open(resultfile,'w',buffering=1)
     t = open(timingsfile,'w',buffering=1)
 
-    for i in range(201):
+    for i in range(10):
         for sim in sims:
             if i%2 == 0:
                 if 'env2' in sim.settings['name']:

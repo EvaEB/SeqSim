@@ -1,0 +1,13 @@
+pop_size:           [100,10]   #population size per population
+max_pop:            [1000,100] #maximum population size (global or per population)
+transfer_prop:      0.5             #transfer popultation (global or per population)
+migration:          [[0  ,0.01],     #migration rate (None or migration matrix)
+                     [0.01,  0]]
+sampling:           [0,0]              #sampling rate (per population)
+n_transfer:         100              #number of transfers
+n_gen_per_transfer: 2               #number of generations per transfer
+
+
+events: [[100],        #events (changes to parameters) during simulation
+         [sampling], #format: [[passage nrs], [parameters to change], [new values]]
+         [[100,100]]]

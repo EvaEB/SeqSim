@@ -103,20 +103,20 @@ class Population():
         stats['unmutated'] = self.changes[0,3]
 
 
-        stats['total_mutations'] = 0
-        for i,node in enumerate(self.changes[1:]):
-            if node[3] > 0:
-                n_muts = 1
-                parent = int(node[2])
-                while parent!=0:
-                    parent = int(self.changes[parent,2])
-                    mut_counts[parent-1]+=1
-                    n_muts+=1
-                stats['total_mutations'] += n_muts*node[3]
+        # stats['total_mutations'] = 0
+        # for i,node in enumerate(self.changes[1:]):
+        #     if node[3] > 0:
+        #         n_muts = 1
+        #         parent = int(node[2])
+        #         while parent!=0:
+        #             parent = int(self.changes[parent,2])
+        #             mut_counts[parent-1]+=1
+        #             n_muts+=1
+        #         stats['total_mutations'] += n_muts*node[3]
 
         stats['unique_mutations'] = len(set(self.changes[1:,1]))
 
-        print mut_counts
+        # print mut_counts
         return stats
 
 
@@ -196,10 +196,11 @@ class Population():
         #         else:
         #             return np.nan
 
-sim = Simulation(sequence=Seq(seq='ATA'))
-test = Population(sim,10)
-test.add_sequence()
-test.add_sequence([0.1,2.1])
-test.add_sequence([2.1])
-test.add_sequence([0.3,2.3])
-print test.stats()
+if __name__ == '__main__':
+    sim = Simulation(sequence=Seq(seq='ATA'))
+    test = Population(sim,10)
+    test.add_sequence()
+    test.add_sequence([0.1,2.1])
+    test.add_sequence([2.1])
+    test.add_sequence([0.3,2.3])
+    print test.stats()

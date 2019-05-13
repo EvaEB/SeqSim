@@ -1,0 +1,26 @@
+#settings for the MFED
+model: 'lognormal'
+parameters:
+    fl: 0.45
+    mu: -0.248
+    sigma: 0.149
+
+#settings for new mutations
+mut_rate: 1.2e-4
+subs_matrix: [[0.54505451, 0.79257926, 0.90629063, 1.],
+              [0.38363836, 0.81938194, 0.90849085, 1.],
+              [0.21922192, 0.33003300, 0.75747575, 1.],
+              [0.18228177, 0.29717028, 0.54194581, 1.]]
+
+#sequence settings
+seq_len: 669
+basedist: [ 0.25,  0.5,  0.75 ,  1] #A,G,T,C
+
+#simulation settings
+n_seq_init: 1
+R0: 6
+ga_increase: 1
+max_pop: 10000
+name: 'HCV'
+
+

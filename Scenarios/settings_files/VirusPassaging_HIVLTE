@@ -1,0 +1,12 @@
+pop_size:           [100,100,100,100]   #population size per population
+max_pop:            400000 #maximum population size (global or per population)
+transfer_amount:      100             #transfer popultation (global or per population)
+migration:               #migration rate (None or migration matrix)
+sampling:           [0, 0,0,0]              #number of samples  (per population)
+n_transfer:         300              #number of transfers
+n_gen_per_transfer: 2               #number of generations per transfer
+
+
+events: [[300],
+         ['sampling'],
+         [[1000,1000,1000,1000]]]

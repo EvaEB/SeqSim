@@ -1,4 +1,4 @@
-import seq_sim
+import SeqSimEvo as seq_sim
 import numpy as np
 from collections import Counter
 import matplotlib.pyplot as plt
@@ -248,6 +248,7 @@ if __name__ == '__main__':
         exit()
     elif sys.argv[1] == 'neutral':
         scenario = 'neutral'
+        param=[]
     elif sys.argv[1] == 'selection':
         scenario = 'exponential'
     elif sys.argv[1] == 'more_lethal':
@@ -285,7 +286,7 @@ if __name__ == '__main__':
 
     transfer_prop = float(sys.argv[6])
 
-    n_transfer = 200
+    n_transfer = 10
 
     experimentID = '_'.join(sys.argv[1:])
     #run_sim(tag_dist, pop_size,transfer_prop,n_transfer,div,scenario,output_tags)

@@ -1,4 +1,4 @@
-import seq_sim
+import SeqSimEvo as seq_sim
 import numpy as np
 
 

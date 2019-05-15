@@ -1,3 +1,4 @@
+from __future__ import print_function
 import SeqSimEvo as sim
 import numpy as np
 
@@ -59,10 +60,10 @@ for gen in range(n_gen):
         #fasta += compartments[2].current_gen.to_fasta(n_seq=10,description='-3-{}'.format(gen))
 
     #print some stats
-    print 'gen {}: nseq'.format(gen),
+    print('gen {}: nseq'.format(gen),end=' ')
     for comp in compartments:
-        print comp.current_gen.stats()['n_seq'],
-    print ''
+        print(comp.current_gen.stats()['n_seq'],end=' ')
+    print('')
 
 with open('3comp.fasta', 'w') as f:
     f.write(fasta)

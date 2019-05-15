@@ -1,3 +1,4 @@
+from __future__ import print_function
 import SeqSimEvo as seq_sim
 import numpy as np
 
@@ -50,7 +51,7 @@ class multiple_compartments(object):
                 name = names[i]
             else:
                 name = str(i)
-            print kwargs
+            print(kwargs)
             new_kwargs = {j: kwargs[j][i] for j in kwargs}
             self.sims.append(self.base_sim.copy(name,n_seq=n_seq,**new_kwargs))
 
@@ -103,7 +104,7 @@ class multiple_compartments(object):
 ##TODO: implement temporal sampling
 def run(scenario_settings,organism_settings):
     kw_settings = {}
-    print scenario_settings
+    print(scenario_settings)
     for i in scenario_settings:
         if i in ['n_comparments','diverse_index','names','n_seq_init','migration',
                  'mut_rate','R0','max_pop']:
@@ -126,7 +127,7 @@ def run(scenario_settings,organism_settings):
     fasta = ''
 
     for i in range(scenario_settings['n_gen']):
-        print i
+        print(i)
         sim.new_generation()
         if i+1 in scenario_settings['sampling_times']:
             for j,s in enumerate(sim.sims):
@@ -183,7 +184,7 @@ if __name__ == '__main__':
     else:
         settings['migration'] = ast.literal_eval(args.mig)
 
-    print args.sa
+    print(args.sa)
     settings['sampling_amount'] = args.sa
 
     if args.st is None:
@@ -206,4 +207,4 @@ if __name__ == '__main__':
     if args.maxpop is not None:
         settings['max_pop'] = args.maxpop
 
-    print run(settings,  args.o)
+    print(run(settings,  args.o))

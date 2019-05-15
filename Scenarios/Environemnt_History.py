@@ -108,7 +108,7 @@ class Seq(seq_sim.Seq):
 
 def analyze_passage(sim,f,passage):
     try:
-        changes = np.vstack(sim.current_gen.changes.values())
+        changes = np.vstack(list(sim.current_gen.changes.values()))
     except ValueError:
         return 0
     n_seq = float(sim.n_seq)
@@ -181,7 +181,7 @@ if __name__ == '__main__':
 
     sims += [env2_1]+[env2_1.copy('env2_'+str(i)) for i in range(2,6)]
 
-    with open(interactionfile,'w') as f:
+    with open(interactionfile,'wb') as f:
         pickle.dump(env1_1.interactionTable,f)
 
     f = open(resultfile,'w',buffering=1)

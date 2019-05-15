@@ -1,12 +1,12 @@
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
 """
 Created on Thu Dec 15 13:42:33 2016
 
 @author: eva
 """
+from __future__ import print_function
+import sys
 import numpy as np
-np.set_printoptions(threshold=np.nan, suppress=True)
+np.set_printoptions(threshold=sys.maxsize, suppress=True)
 from collections import Counter
 import random
 from copy import copy, deepcopy
@@ -14,9 +14,7 @@ import time
 import yaml
 import os
 import inspect
-import progressbar
 import scipy.stats as scats
-import sys
 
 class Seq(object):
     '''
@@ -105,7 +103,7 @@ class Simulation(object):
         except TypeError:
             self.settings = simulation_settings
 
-        for key, value in kwargs.iteritems():
+        for key, value in kwargs.items():
             self.settings[key] = value
 
 
@@ -259,10 +257,10 @@ class Simulation(object):
         """mutates a sequence (with existing mutations) of length N, according to
         the per base mutation rate"""
         try:
-            nr_mut = self.mutations_per_seq.next()
+            nr_mut = next(self.mutations_per_seq)
         except StopIteration:
             self.mutations_per_seq = self.new_mutations_per_seq()
-            nr_mut = self.mutations_per_seq.next()
+            nr_mut = next(self.mutations_per_seq)
         if nr_mut>0:
             success_mut = 0
 
@@ -295,6 +293,10 @@ class Simulation(object):
         fitnesses = [0]*self.current_gen.n_seq
         weights = [0]*self.current_gen.n_seq
         #generate offspring list
+        try:
+            xrange()
+        except NameError:
+            xrange = range
         for i in xrange(self.current_gen.n_seq):
             #find changes in current sequence
             #find the number of offspring based on the mutations that already took place
@@ -318,7 +320,7 @@ class Simulation(object):
                                                         size=int(self.settings['max_pop']),
                                                         p=np.array(weights,dtype=float)/sum(weights)))
             except TypeError:
-                print weights
+                print(weights)
                 np.array(weights,dtype=float)/sum(weights)
         else:
             all_offspring = [i for i,j in enumerate(weights) for k in xrange(j)]
@@ -335,7 +337,7 @@ class Simulation(object):
 
 
         if new_gen.n_seq == 0 and not dieout :
-            print 'died out'
+            print('died out')
             n_gen = self.gen
             self = self.copy(self.settings['name'])
             for i in range(n_gen):
@@ -412,7 +414,7 @@ class Population():
                                                                              to=j[1],
                                                                              seq=i,
                                                                              patient=self.sim.settings['name'])
-        print string
+        print(string)
 
     def sample_to_string(self, seq_ids):
         ''' return a summary of the mutation that have occured in all seq_ids in
@@ -503,7 +505,10 @@ class Population():
         all_mutations = [tuple(row) for row in all_mutations]
         stats['unique_mutations'] = len(set(all_mutations))
 
-        mut_counts = np.array(Counter(all_mutations).values())
+        if len(all_mutations) > 0:
+            mut_counts = np.array(list(Counter(all_mutations).values()))
+        else:
+            mut_counts = []
         if len(mut_counts) > 0:
             stats['majority_mutations'] = sum(mut_counts > (stats['n_seq']/2.0))
             stats['max_fraction'] = max(mut_counts/float(stats['n_seq']))
@@ -617,4 +622,4 @@ if __name__ == '__main__':
     for i in range(n_gen):
         sim.new_generation()
         if i%10 == 0:
-            print 'mean: {}'.format(sim.average_fitness)
+            print('mean: {}'.format(sim.average_fitness))

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import SeqSimEvo as seq_sim
 import numpy as np
 from collections import Counter
@@ -56,7 +57,7 @@ class Simulation(seq_sim.Simulation):
             if epi['model'] == 'none':
                 e = 1
             else:
-                print 'model {} not implemented'.format(epi['model'])
+                print('model {} not implemented'.format(epi['model']))
                 raise()
 
             if len(changes) == 2:
@@ -151,4 +152,4 @@ if __name__ == '__main__':
     for gen in range(n_gen):
         sim.new_generation()
         if gen%10 == 0:
-            print 'mean: {}'.format(sim.average_fitness)
+            print('mean: {}'.format(sim.average_fitness))

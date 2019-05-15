@@ -1,5 +1,3 @@
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
 """
 Created on Tue Jul 11 15:13:13 2017
 
@@ -7,7 +5,7 @@ Created on Tue Jul 11 15:13:13 2017
 
 virus passaging as the experiment in the liquid handling robot
 """
-#import optparse
+from __future__ import print_function
 import os
 import sys
 
@@ -30,7 +28,7 @@ class passaging():
 
         names = iter(range(self.n_pop))
         for i in range(self.n_pop):
-            self.sims.append(main_sim.copy(names.next(),n_seq=self.settings['pop_size'][i]))
+            self.sims.append(main_sim.copy(next(names),n_seq=self.settings['pop_size'][i]))
             try:
                 self.sims[i].settings['max_pop'] = self.settings['max_pop'][i]
             except TypeError:
@@ -175,4 +173,4 @@ if __name__ == '__main__':
 
 
     #run scenario
-    print run(settings, args.o)
+    print(run(settings, args.o))

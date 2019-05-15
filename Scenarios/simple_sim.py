@@ -1,3 +1,4 @@
+from __future__ import print_function
 import SeqSimEvo as seq_sim
 import argparse
 
@@ -54,4 +55,4 @@ if __name__ == '__main__':
 
 
     #run scenario
-    print run(settings, args.o)
+    print(run(settings, args.o))

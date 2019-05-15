@@ -1,11 +1,9 @@
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
 """
 Created on Wed Jul 19 14:29:00 2017
 
 @author: eva
 """
-
+from __future__ import print_function
 import SeqSimEvo as sim
 from collections import Counter
 import numpy as np
@@ -85,7 +83,7 @@ def recreate_dataset(sample_sizes,nr_mutations,apobec,model=None,parameters=None
             if n_changed > nr_mutations[e]:
                 if abs(nr_mutations[e]-n_changed)<abs(nr_mutations[e]-previous):
                     if action == 'print':
-                        print '#{} generations'.format(i)
+                        print('#{} generations'.format(i))
                         this_patient.current_gen.print_sample(sample)
                     elif action == 'shared_stats':
                         stats_here.add(this_patient.current_gen,sample,e)
@@ -99,7 +97,7 @@ def recreate_dataset(sample_sizes,nr_mutations,apobec,model=None,parameters=None
                     break
                 else:
                     if action == 'print':
-                        print '#{} generations'.format(i-1)
+                        print('#{} generations'.format(i-1))
                         previous_gen.print_sample(old_sample)
                     elif action == 'shared_stats':
                         stats_here.add(previous_gen,old_sample,e)
@@ -187,7 +185,7 @@ if __name__ == '__main__':
                                    simulation_settings=settings)
     if action == 'shared_stats': #todo: prettier print
         for i in simulation:
-            print i
+            print(i)
 
     if (action == 'n_generations') or (action == 'fasta'):
-        print simulation
+        print(simulation)

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import SeqSimEvo as seq_sim
 import numpy as np
 from collections import Counter
@@ -30,10 +31,10 @@ class Simulation(seq_sim.Simulation):
         tag = self.current_gen.tags[seq_id_old]
         #add new functionality: mutate tag
         try:
-            nr_mut = self.mutations_per_tag.next()
+            nr_mut = next(self.mutations_per_tag)
         except StopIteration:
             self.mutations_per_tag = self.new_mutations_per_tag()
-            nr_mut = self.mutations_per_tag.next()
+            nr_mut = next(self.mutations_per_tag)
         if nr_mut>0:
             tag_seq = self.sequence.get_tag(tag)
             success_mut = 0
@@ -97,7 +98,7 @@ class Population(seq_sim.Population):
                                                                                     seq=i,
                                                                                     patient=self.sim.settings['name'],
                                                                                     tag = self.tags[i])
-        print string
+        print(string)
 
 
 
@@ -136,10 +137,10 @@ class Seq(seq_sim.Seq):
         return number
 
 def output_tags(sim,transfer):
-    print '#transfer', transfer
+    print('#transfer', transfer)
     counts = Counter(sim.current_gen.tags)
     for i in counts:
-        print i, counts[i]
+        print(i, counts[i])
 
 def output_fitness_per_tag(sim,transfer):
     #print '#',transfer
@@ -158,11 +159,11 @@ def output_fitness_per_tag(sim,transfer):
         #     changes.append(0)
 
     for i in tags:
-        print transfer, i, np.mean(tags[i]), np.max(tags[i]),np.min(tags[i]),len(tags[i])
+        print(transfer, i, np.mean(tags[i]), np.max(tags[i]),np.min(tags[i]),len(tags[i]))
 
 def output_seqs(sim,transfer):
     if transfer in [99,199]:
-        print '#',transfer
+        print('#',transfer)
         sim.current_gen.print_sample(sim.current_gen.get_sample(sim.current_gen.n_seq))
 
 
@@ -227,7 +228,7 @@ def output_all(sim, transfer):
                     'experimentID':experimentID,
                     'changes': changes_string
                    }
-            print '{count},{tag},{fitness},{transfer},{experimentID},{changes}'.format(**data)
+            print('{count},{tag},{fitness},{transfer},{experimentID},{changes}'.format(**data))
             count=1
     data = {'count': count,
             'tag': sim.current_gen.tags[seqID],
@@ -236,7 +237,7 @@ def output_all(sim, transfer):
             'experimentID':experimentID,
             'changes': changes_string
            }
-    print '{count},{tag},{fitness},{transfer},{experimentID},{changes}'.format(**data)
+    print('{count},{tag},{fitness},{transfer},{experimentID},{changes}'.format(**data))
 
 
 if __name__ == '__main__':
@@ -244,7 +245,7 @@ if __name__ == '__main__':
     import tqdm
 
     if sys.argv[1] in ['help','-h','h']:
-        print 'usage: python sequence_tags.py MFED nBarcodes distBarcodes popSize diverseStart transferProp'
+        print('usage: python sequence_tags.py MFED nBarcodes distBarcodes popSize diverseStart transferProp')
         exit()
     elif sys.argv[1] == 'neutral':
         scenario = 'neutral'
@@ -264,7 +265,7 @@ if __name__ == '__main__':
             scenario = 'exponential'
             param = {'fl': 0.1,'fb': 0.0,'fn':0.6,'lb': 0,'fd': 0.3, 'ld': 0.21}
     else:
-        print 'unknown MFED'
+        print('unknown MFED')
         exit()
 
     n_tags = int(sys.argv[2])
@@ -281,7 +282,7 @@ if __name__ == '__main__':
 
     div = float(sys.argv[5]) #before setting this != 0: make sure diversified sequences don't have too large fitness effects!!!!!!!
     if div != 0:
-        print 'diversity diffferent from 0 not implemented yet!!'
+        print('diversity diffferent from 0 not implemented yet!!')
         exit()
 
     transfer_prop = float(sys.argv[6])

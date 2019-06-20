@@ -39,7 +39,7 @@ subs_matrix: [[0.25, 0.50, 0.75, 1.],   #A
 
 #sequence settings
 seq_len: 5386
-basedist: [0.25,0.5,0.75,1] #A,G,T,C
+basedist: [0.24,0.47,0.79,1] #A,G,T,C
 
 #simulation settings
 n_seq_init: 1000000

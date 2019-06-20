@@ -14,7 +14,7 @@ def select():
 
     #display default settings organism
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    dir_path_up = os.sep.join(dir_path.split(os.sep)[:-2])
+    dir_path_up = os.sep.join(dir_path.split(os.sep)[:-1])
     sim_settings_path = dir_path_up+os.sep+'SeqSimEvo'+os.sep+'simulation_settings/'
     scenario_settings_path = dir_path_up+os.sep+'Scenarios'+os.sep+'settings_files/'
 
@@ -73,7 +73,7 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 with gui('SeqSim') as app:
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    dir_path_up = os.sep.join(dir_path.split(os.sep)[:-2])
+    dir_path_up = os.sep.join(dir_path.split(os.sep)[:-1])
     sim_settings_path = dir_path_up+os.sep+'SeqSimEvo'+os.sep+'simulation_settings/'
     Organism_options = os.listdir(sim_settings_path)
     app.addLabelOptionBox('Organism',Organism_options)

@@ -8,6 +8,7 @@ virus passaging as the experiment in the liquid handling robot
 from __future__ import print_function
 import os
 import sys
+from copy import deepcopy as copy
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 dir_path_up = os.sep.join(dir_path.split(os.sep)[:-1])
@@ -20,9 +21,8 @@ import yaml
 
 class passaging():
     def __init__(self, sim_settings, passaging_settings):
-        self.settings = passaging_settings
-
-        main_sim = sim.Simulation(sim_settings, n_seq_init = max(self.settings['pop_size']))
+        self.settings = copy(passaging_settings)
+        main_sim = sim.Simulation(copy(sim_settings), n_seq_init = max(self.settings['pop_size']))
         self.sims = []
         self.n_pop = len(self.settings['pop_size'])
 
@@ -38,7 +38,6 @@ class passaging():
 
     def next_passage(self):
         self.cur_passage+=1
-        #print self.cur_passage
         #handle events
         while self.cur_passage in self.settings['events'][0]:
             loc = self.settings['events'][0].index(self.cur_passage)
@@ -65,7 +64,6 @@ class passaging():
                                                    description=' - pop {} - transfer {} '.format(i,self.cur_passage))
 
             #change parameters for transfer
-            #print pop.current_gen.n_seq
             if 'transfer_amount' in self.settings:
                 pop.settings['max_pop'] = self.settings['transfer_amount']
             else:
@@ -96,7 +94,10 @@ class passaging():
 def run(scenario_settings,organism_settings):
     passaging_run = passaging(organism_settings,scenario_settings)
     passaging_run.all_passages()
-    return passaging_run.output
+    fasta = passaging_run.output
+    if len(fasta) < 6000:
+        print(passaging_run.sims)
+    return fasta
 
 
 
@@ -138,7 +139,6 @@ if __name__ == '__main__':
                             [passage number] [parameters to change] [new values] : ..."')
 
     args = parser.parse_args()
-
     settings = {}
 
     settings['n_transfer'] = args.n

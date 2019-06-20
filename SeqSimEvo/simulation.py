@@ -35,8 +35,6 @@ class Seq(object):
             self.sequence = self.translate_sequence(seq)
             self.len = len(seq)
 
-
-
     def __str__(self):
         seq = ''
         for i in self.sequence:
@@ -59,6 +57,8 @@ class Seq(object):
     def generate_seq(self, seq_len, base_dist=None):
         '''generate a sequence of seq_len bases according to the base
         distribution (order: A-G-T-C)'''
+        if seq_len < 0:
+            raise TypeError('seq_len must be positive integer')
         seq = []
         if base_dist is None:
             base_dist = np.array([0.25, 0.5, 0.75, 1])

@@ -1,16 +1,14 @@
 # seq_sim - simulations of viral diversification
 
 ## installation
-First, make sure you have a working python installation (2.7), with the following packages installed
+First, make sure you have a working python installation (2.7/3.6), with the following packages installed
 * numpy
 * scipy
 * pyyaml
-* progressbar
 * Tqdm
 * Ete3
 * Ipython
 * matplotlib
-* six
 
 Currently, I have not managed to find an easy way to install/manage packages, sorry!
 To install, you'll  have to manually put the `seq_sim` folder somewhere in your `PYTHONPATH`

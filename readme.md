@@ -46,7 +46,7 @@ see `help(seq_sim.Simulation)` for all possible settings
 
 		sim.current_gen.stats()
 
-# sim_scripts - simulation of specific scenarios using seq_sim
+# Scenarios - simulation of specific scenarios using SeqSimEvo
 ## The gui
 ### Installation
 Install dependencies:

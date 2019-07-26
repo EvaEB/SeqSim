@@ -38,7 +38,7 @@ class multiple_compartments(object):
         self.n_comparments = n_comparments
 
         #initialize migration matrix
-        if type(migration) is float:
+        if type(migration) is float or np.shape(migration) == (1,1):
             self.mig_matrix = np.ones((n_comparments,n_comparments))*migration
         else:
             migration = np.array(migration)
@@ -51,17 +51,17 @@ class multiple_compartments(object):
         #set up sims for all compartments
         self.sims = []
         for i in range(n_comparments):
-            if type(n_seq_init) is int :
-                n_seq = n_seq_init
-            else:
+            try:
                 n_seq = n_seq_init[i]
+            except IndexError:
+                n_seq = n_seq_init[0]
 
 
             if names is not None:
                 name = names[i]
             else:
                 name = str(i)
-            print(kwargs)
+
             new_kwargs = {j: kwargs[j][i] for j in kwargs}
             self.sims.append(self.base_sim.copy(name,n_seq=n_seq,**new_kwargs))
 
@@ -109,7 +109,6 @@ class multiple_compartments(object):
 ##TODO: implement temporal sampling
 def run(scenario_settings,organism_settings):
     kw_settings = {}
-    print(scenario_settings)
     for i in scenario_settings:
         if i in ['n_comparments','diverse_index','names','n_seq_init','migration',
                  'mut_rate','R0','max_pop']:
@@ -181,7 +180,6 @@ if __name__ == '__main__':
     else:
         settings['migration'] = ast.literal_eval(args.mig)
 
-    print(args.sa)
     settings['sampling_amount'] = args.sa
 
     if args.st is None:

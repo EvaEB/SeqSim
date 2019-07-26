@@ -653,7 +653,7 @@ class Population():
         if seq_id in self.changed:
             if pos in self.changes[seq_id][:, 0]:
                 return self.changes[seq_id][self.changes[seq_id][:, 0] == pos, 1]
-        return self.sim.sequence[pos]
+        return self.sim.sequence.sequence[pos]
 
     def stats(self):
         ''' return a dict of stats about the population

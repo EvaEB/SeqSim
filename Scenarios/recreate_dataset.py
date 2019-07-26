@@ -1,7 +1,9 @@
 """
-Created on Wed Jul 19 14:29:00 2017
+recreate_dataset.py: a SeqSimEvo scenario
 
-@author: eva
+Recreate a dataset of sequence samples from different patients. The amount of
+unique mutations per sequence sample is matched as closely as possible. A version
+of this code was used for https://doi.org/10.1093/ve/vey029
 """
 from __future__ import print_function
 import SeqSimEvo as sim
@@ -65,6 +67,7 @@ def recreate_dataset(sample_sizes,nr_mutations,apobec,model=None,parameters=None
     elif action == 'fasta':
         fasta = simul.current_gen.to_fasta(n_seq=1,description=' - ancestor')
     for e, sample_size in enumerate(sample_sizes):
+        print(e)
         this_patient = simul.copy(name=e)
         for i in range(150):
             this_patient.new_generation()

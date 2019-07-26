@@ -1,3 +1,9 @@
+'''
+simple_sim.py: a SeqSimEvo scenario
+
+preforms a simple simulation of sequence evolution
+'''
+
 from __future__ import print_function
 import SeqSimEvo as seq_sim
 import argparse

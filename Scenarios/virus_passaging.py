@@ -1,9 +1,9 @@
 """
-Created on Tue Jul 11 15:13:13 2017
+virus_passaging.py: a SeqSimEvo scenario
 
-@author: eva
-
-virus passaging as the experiment in the liquid handling robot
+recreates a virus passaging experiment, where virus is allowed to multiply on a
+host for a certain number of generations, after which a proportion is transferred
+to new hosts.
 """
 from __future__ import print_function
 import os

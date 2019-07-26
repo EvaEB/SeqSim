@@ -1,3 +1,12 @@
+'''
+multiple_compartments.py: a scenario for SeqSimEvo
+
+Simulation of sequence evolution in multiple compartments, with migration between
+the compartments.
+
+
+'''
+
 from __future__ import print_function
 import SeqSimEvo as seq_sim
 import numpy as np
@@ -6,24 +15,25 @@ import numpy as np
 class multiple_compartments(object):
     '''
     simulation of multiple compartments
-
-    keyword arguments
-
-    * sim_settings: simulation settings to use, as in the base 'simulation' class (default: 'HIV')
-
-    * n_comparments: number of compartments to simulate (default: 2)
-
-    * migration: either a float (equal migration rates between compartments), or
-      a migration matrix with rows the 'from' compartment and columns the 'to'
-      compartment (default 0)
-
-    * diverse_index: differences in fitness table between the compartments. 0 is
-      no differences (parallel evolution), 1 is all effects are different. (default 0)
-
-    * names: names of the compartments (default: 0,1,2,3,...)
     '''
     def __init__(self,sim_settings = 'HIV',n_comparments = 2,migration=0.0,
                  diverse_index = 0, names=None,n_seq_init=1,**kwargs):
+        '''
+        initialize the simulation.
+
+        Arguments:
+            sim_settings: simulation settings to use, as in the base 'simulation'
+                class (default: 'HIV')
+            n_comparments (int): number of compartments to simulate (default: 2)
+            migration: migration rate between the compartments (default 0)
+                float: equal migration rates between compartments
+                matrix: compartment-specific migration rates. rows the 'from'
+                    compartment and columns the 'to' compartment
+            diverse_index (float): differences in fitness table between the
+                compartments. 0 is no differences (parallel evolution),
+                1 is all effects are different.  default 0.
+            names (list): names of the compartments (default: [0,1,2,3,...])
+        '''
         self.base_sim = seq_sim.Simulation(simulation_settings=sim_settings)
         self.n_comparments = n_comparments
 
@@ -57,6 +67,7 @@ class multiple_compartments(object):
 
 
     def new_generation(self):
+        '''preform migration and generate a new generation for all compartments '''
         #do migration
         #get emigrants from each compartment
         migrants = [[] for i in range(self.n_comparments)]
@@ -66,13 +77,7 @@ class multiple_compartments(object):
                     #select migrants
                     mig_rate = self.mig_matrix[comp1,comp2]
                     n_to_migrate = mig_rate*self.sims[comp1].current_gen.n_seq
-                    if n_to_migrate < 1:
-                        if np.random.random() < n_to_migrate:
-                            n_to_migrate = 1
-                        else:
-                            n_to_migrate = 0
-                    else:
-                        n_to_migrate = int(n_to_migrate)
+                    n_to_migrate = int(n_to_migrate) + (1 if np.random.random()<(n_to_migrate-int(n_to_migrate)) else 0)
                     to_migrate = self.sims[comp1].current_gen.get_sample(n_to_migrate)
 
                     # remember changes in these migrants for later adding, remove from the current compartment
@@ -110,14 +115,6 @@ def run(scenario_settings,organism_settings):
                  'mut_rate','R0','max_pop']:
             kw_settings[i] = scenario_settings[i]
     sim = multiple_compartments(sim_settings = organism_settings,**kw_settings)
-                                #n_comparments = scenario_settings['n_comparments'],
-                                #diverse_index = scenario_settings['diverse_index'],
-                                #names=scenario_settings['names'],
-                                #n_seq_init=scenario_settings['n_seq_init'],
-                                #migration=scenario_settings['migration'],
-                                #mut_rate=scenario_settings['mut_rate'],
-                                #R0=scenario_settings['R0'],
-                                #max_pop=scenario_settings['max_pop'])
 
     if type(scenario_settings['sampling_amount']) is int:
         n_seq = [scenario_settings['sampling_amount']]*scenario_settings['n_comparments']

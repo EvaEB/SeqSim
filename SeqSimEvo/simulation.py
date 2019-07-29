@@ -490,7 +490,7 @@ class Population():
         sim (Simulation): the simulation to which this Population belongs
         n_seq: the number of sequences in the population
     """
-    def __init__(self, simulation, changes=None, changed=None, n_seq=1,**kwargs):
+    def __init__(self, simulation, changes=None, changed=None, n_seq=None,**kwargs):
         """
         Initialize the Population
 
@@ -508,7 +508,10 @@ class Population():
             self.changes = changes
             self.changed = set(changed)
         self.sim = simulation
-        self.n_seq = n_seq
+        if n_seq is None:
+            self.n_seq = self.sim.n_seq
+        else:
+            self.n_seq = n_seq
 
     def __len__(self):
         return self.n_seq
@@ -528,7 +531,7 @@ class Population():
 
     def copy(self):
         ''' create a deep copy of the population'''
-        return Population(self.sim,self.changes,self.changed,self.n_seq)
+        return Population(self.sim.copy(self.sim.settings['name']+'_copy'),deepcopy(self.changes),deepcopy(self.changed),self.n_seq)
 
     def print_sample(self, seq_ids):
         ''' print a summary of the mutations that have occured
@@ -542,6 +545,8 @@ class Population():
         Returns:
             Nothing. Output is printed to stdout.
         '''
+        if any(np.array(seq_ids)>self.n_seq):
+            raise IndexError, 'seqID out of range'
         string = '#mutID (from-pos-to)\tsequence\tpatient\n'
         for i in range(self.n_seq):
             if i in self.changed and i in seq_ids:
@@ -549,7 +554,7 @@ class Population():
                     pos = j[0]
                     string += '{orig}-{pos}-{to}\t{seq}\t{patient}\n'.format(orig=self.sim.sequence[pos],
                                                                              pos=pos,
-                                                                             to=j[1],
+                                                                             to=self.sim.sequence.translation[j[1]],
                                                                              seq=i,
                                                                              patient=self.sim.settings['name'])
         print(string)
@@ -579,6 +584,8 @@ class Population():
 
     def get_sample(self, sample_size):
         ''' get a random sample from the population
+        If the sample size is larger than the population, the whole population is
+        returned
 
         Arguments:
             sample_size (int): the size of the sample
@@ -593,7 +600,8 @@ class Population():
 
 
     def delete_sequence(self, ID):
-        ''' delete sequence from the population
+        ''' delete sequence from the population.
+        Sequence IDs will be reassigned to fit within the new number of sequences.
 
         Arguments:
             ID (int): the sequence ID of the sequence to remove
@@ -606,12 +614,18 @@ class Population():
             self.changed.remove(ID)
             del self.changes[ID]
 
+        if self.get_seq(self.n_seq) is not None:
+            self.changed.remove(self.n_seq)
+            self.changed.add(ID)
+
+            self.changes[ID] = self.changes[self.n_seq]
+            del self.changes[self.n_seq]
+
+
     def add_sequence(self, changes=None):
         '''add a sequence to the population
 
-        add a sequence, optionally with certain changes (as a numpy array
-        with seqID, location of mutation, mutated target base, ancestor seq ID
-        in a row per change), to the population
+        add a sequence, optionally with certain changes (as a list of position, new), to the population
 
         Arguments:
             changes: the changes present in this sequence
@@ -621,8 +635,8 @@ class Population():
         '''
         self.n_seq += 1
         if changes is not None:
-            self.changed.add(self.n_seq-1)
-            self.changes[self.n_seq-1] = changes
+            for i in changes:
+                self.add_change(self.n_seq-1,i[0],i[1])
 
         return self.n_seq-1
 
@@ -637,6 +651,13 @@ class Population():
         Returns:
             Nothing. Population is changed in-place.
         '''
+        if pos > len(self.sim.sequence):
+            raise IndexError, 'Pos {} outside sequence length'.format(pos)
+
+        if seq_id > self.n_seq:
+            raise IndexError, 'SeqID {} outside pop size {} {}'.format(seq_id, self.n_seq,self)
+
+
         if seq_id in self.changed:
             #add to existing changes list
             if pos in self.changes[seq_id][:, 0]:
@@ -746,8 +767,14 @@ class Population():
         return seq
 
     def get_seq(self, sequence_id):
-        ''' get the changes in the sequence with id sequence_id'''
-        if sequence_id in self.changed:
+        ''' get the changes in the sequence with id sequence_id
+
+        Raises:
+            IndexError: when sequence_id is out of bounds
+        '''
+        if sequence_id > self.n_seq:
+            raise IndexError, 'sequence_id is out of bounds'
+        elif sequence_id in self.changed:
             return self.changes[sequence_id]
         else:
             return None

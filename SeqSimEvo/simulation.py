@@ -97,7 +97,7 @@ class Seq(object):
         else:
             base_dist = np.array(base_dist)
         for i in range(seq_len):
-            seq.append(sum(base_dist < random.random()))
+            seq.append(4-sum(base_dist > random.random()))
         self.sequence = seq
 
 class Simulation(object):
@@ -506,6 +506,8 @@ class Population():
             self.changes = {}
         else:
             self.changes = changes
+            for i in self.changes:
+                self.changes[i] = np.array(self.changes[i])
             self.changed = set(changed)
         self.sim = simulation
         if n_seq is None:
@@ -577,7 +579,7 @@ class Population():
                     pos = j[0]
                     string += '{orig}-{pos}-{to}\t{seq}\t{patient}\n'.format(orig=self.sim.sequence[pos],
                                                                              pos=pos,
-                                                                             to=j[1],
+                                                                             to=self.sim.sequence.translation[j[1]],
                                                                              seq=i,
                                                                              patient=self.sim.settings['name'])
         return string
@@ -787,18 +789,19 @@ class Population():
             infection from the distribution of hamming distances as presented
             in Lee et al, 2010
         '''
-        simulation_settings = self.simulation.settings
+        simulation_settings = self.sim.settings
         HDs = []
         for i in sample:
+            if i in self.changed:
+                changed1 = [str(k) for k in self.changes[i]]
+            else:
+                changed1 = []
             for j in sample:
-                if i in self.changes.keys():
-                    changed1 = [str(k) for k in self.changes[i]]
-                else:
-                    changed1 = []
-                if j in self.changes.keys():
-                    changed2 =  [str(k) for k in self.changes[j]]
-                else: changed2 = []
-                HDs.append(len(set(list(changed1)) ^ set(list(changed2))))
+                if i!=j:
+                    if j in self.changed:
+                        changed2 =  [str(k) for k in self.changes[j]]
+                    else: changed2 = []
+                    HDs.append(len(set(list(changed1)) ^ set(list(changed2))))
         if action == 'mean':
             return np.mean(HDs)
         elif action == 'Poisson_fit':

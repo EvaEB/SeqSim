@@ -1,7 +1,10 @@
 from __future__ import print_function
 import SeqSimEvo
+#from SeqSimEvo import binary_fission as SeqSimEvo
+
 import pytest
 import numpy as np
+from copy import deepcopy, copy
 
 #tests written for SeqSimEvo.Seq.__init__
 #                               .__str__
@@ -375,9 +378,17 @@ def test_Simulation_mutate_seq():
     assert next_gen.stats()['total_mutations'] == 3
 
 def test_Simulation_new_generation():
-    seq = SeqSimEvo.Seq(seq='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
-    sim = SeqSimEvo.Simulation(n_seq_init=3,sequence=seq)
+    seq = SeqSimEvo.Seq(seq_len=5000)
+    sim = SeqSimEvo.Simulation(n_seq_init=10000,sequence=seq,mut_rate=0.001)
+    sim.effective_pop = -1
+    sim.average_fitness = -1
+    sim.n_seq = -1
+    old_gen = deepcopy(sim.current_gen.changes)
+
     sim.new_generation()
 
     assert sim.gen == 1
-    
+    assert sim.current_gen.changes != old_gen, 'this test can fail by chance. Be worried if it keeps failing.'
+    assert sim.effective_pop != -1
+    assert sim.average_fitness != -1
+    assert sim.n_seq != -1

@@ -346,7 +346,7 @@ class Simulation(object):
                 (in the current generation)
 
         Returns:
-            Nothing (the sequence is edited in `pop`)
+            True/False (did the sequence mutate or not?)
         """
         #get the number of mutations that will take place
         try:
@@ -378,6 +378,9 @@ class Simulation(object):
                         if (self.settings['ga_increase'] <= 1) or random.random() < (1.0/self.settings['ga_increase'] ):
                             pop.add_change(seq_id_new, where, new_base)
                             success_mut += 1
+            return True
+        else:
+            return False
 
     def new_generation(self,new_gen=None,dieout=False):
         """
@@ -390,7 +393,8 @@ class Simulation(object):
                 new_generation if the population died out (False, default)
 
         Returns:
-            Nothing. current_gen and other simulation attributes are updated as needed
+            Nothing. Updates current_gen, effective_pop, gen, average_fitness,
+            and n_seq
         """
         self.effective_pop = 0
         self.gen += 1
@@ -526,7 +530,7 @@ class Population():
                     pos = j[0]
                     string += '{orig}-{pos}-{to}\t{seq}\t{patient}\n'.format(orig=self.sim.sequence[pos],
                                                                              pos=pos,
-                                                                             to=j[1],
+                                                                             to=self.sim.sequence.translation[j[1]],
                                                                              seq=i,
                                                                              patient=self.sim.settings['name'])
         return string
@@ -548,7 +552,7 @@ class Population():
             Nothing. Output is printed to stdout.
         '''
         if any(np.array(seq_ids)>self.n_seq):
-            raise IndexError, 'seqID out of range'
+            raise IndexError('seqID out of range')
         string = '#mutID (from-pos-to)\tsequence\tpatient\n'
         for i in range(self.n_seq):
             if i in self.changed and i in seq_ids:
@@ -654,10 +658,10 @@ class Population():
             Nothing. Population is changed in-place.
         '''
         if pos > len(self.sim.sequence):
-            raise IndexError, 'Pos {} outside sequence length'.format(pos)
+            raise IndexError('Pos {} outside sequence length'.format(pos))
 
         if seq_id > self.n_seq:
-            raise IndexError, 'SeqID {} outside pop size {} {}'.format(seq_id, self.n_seq,self)
+            raise IndexError('SeqID {} outside pop size {} {}'.format(seq_id, self.n_seq,self))
 
 
         if seq_id in self.changed:
@@ -775,7 +779,7 @@ class Population():
             IndexError: when sequence_id is out of bounds
         '''
         if sequence_id > self.n_seq:
-            raise IndexError, 'sequence_id is out of bounds'
+            raise IndexError('sequence_id is out of bounds')
         elif sequence_id in self.changed:
             return self.changes[sequence_id]
         else:

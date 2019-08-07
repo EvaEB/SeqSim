@@ -5,15 +5,16 @@ Created on Thu Dec 15 13:42:33 2016
 """
 from __future__ import print_function
 import sys
-import numpy as np
-np.set_printoptions(threshold=sys.maxsize, suppress=True)
 from collections import Counter
 import random
 from copy import copy, deepcopy
 import time
-import yaml
 import os
 import inspect
+
+import numpy as np
+np.set_printoptions(threshold=sys.maxsize, suppress=True)
+import yaml
 import scipy.stats as scats
 
 class Seq(object):
@@ -537,7 +538,7 @@ class Population():
 
     def copy(self):
         ''' create a deep copy of the population'''
-        return Population(self.sim.copy(self.sim.settings['name']+'_copy'),deepcopy(self.changes),deepcopy(self.changed),self.n_seq)
+        return Population(self.sim.copy(str(self.sim.settings['name'])+'_copy'),deepcopy(self.changes),deepcopy(self.changed),self.n_seq)
 
     def print_sample(self, seq_ids):
         ''' print a summary of the mutations that have occured

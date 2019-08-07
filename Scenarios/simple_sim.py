@@ -5,8 +5,9 @@ preforms a simple simulation of sequence evolution
 '''
 
 from __future__ import print_function
-import SeqSimEvo as seq_sim
 import argparse
+
+import SeqSimEvo as seq_sim
 
 def run(scenario_settings, sim_settings):
     sim = seq_sim.Simulation(simulation_settings=sim_settings)

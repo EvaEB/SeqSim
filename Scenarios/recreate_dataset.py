@@ -6,10 +6,10 @@ unique mutations per sequence sample is matched as closely as possible. A versio
 of this code was used for https://doi.org/10.1093/ve/vey029
 """
 from __future__ import print_function
-import SeqSimEvo as sim
 from collections import Counter
 import numpy as np
 import pickle
+import SeqSimEvo as sim
 
 class stats(object):
     def __init__(self):

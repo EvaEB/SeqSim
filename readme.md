@@ -1,3 +1,5 @@
+(c) 2019 Eva Bons
+
 # seq_sim - simulations of viral diversification
 
 ## installation

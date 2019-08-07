@@ -1,12 +1,13 @@
 import os
+from collections import OrderedDict
+
 import matplotlib
 matplotlib.use('TkAgg')
 from appJar import gui
 import yaml
+
 import scenarios
-from collections import OrderedDict
 import fasta_tools
-from IPython.utils.capture import capture_output
 
 
 def select():
@@ -69,35 +70,39 @@ def settings_press(btn):
     elif btn == 'view nj tree':
         app.thread(fasta_tools.njTree(fasta_string=settings['fasta_text']))
 
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
-with gui('SeqSim') as app:
+def gui_run():
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    with gui('SeqSim') as app:
+        global app
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        dir_path_up = os.sep.join(dir_path.split(os.sep)[:-1])
+        sim_settings_path = dir_path_up+os.sep+'SeqSimEvo'+os.sep+'simulation_settings/'
+        Organism_options = os.listdir(sim_settings_path)
+        app.addLabelOptionBox('Organism',Organism_options)
 
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    dir_path_up = os.sep.join(dir_path.split(os.sep)[:-1])
-    sim_settings_path = dir_path_up+os.sep+'SeqSimEvo'+os.sep+'simulation_settings/'
-    Organism_options = os.listdir(sim_settings_path)
-    app.addLabelOptionBox('Organism',Organism_options)
+        scenario_settings_path = dir_path_up+os.sep+'Scenarios'+os.sep+'settings_files/'
+        Scenario_options = os.listdir(scenario_settings_path)
+        app.addLabelOptionBox('Scenario',Scenario_options)
 
-    scenario_settings_path = dir_path_up+os.sep+'Scenarios'+os.sep+'settings_files/'
-    Scenario_options = os.listdir(scenario_settings_path)
-    app.addLabelOptionBox('Scenario',Scenario_options)
+        app.addButton('select',select)
 
-    app.addButton('select',select)
+        app.addLabel('Org','Organism settings')
+        app.setLabelBg('Org','grey')
+        app.addTextArea('OrgSet')
+        app.getTextAreaWidget('OrgSet').config(font="Courier 20")
+        app.addButton('save organism settings',settings_press)
 
-    app.addLabel('Org','Organism settings')
-    app.setLabelBg('Org','grey')
-    app.addTextArea('OrgSet')
-    app.getTextAreaWidget('OrgSet').config(font="Courier 20")
-    app.addButton('save organism settings',settings_press)
+        app.addLabel('Scen','Scenario settings')
+        app.setLabelBg('Scen','grey')
+        app.addTextArea('ScenSet')
+        app.getTextAreaWidget('ScenSet').config(font="Courier 20")
+        app.addButtons(['save scenario settings','run'],settings_press)
 
-    app.addLabel('Scen','Scenario settings')
-    app.setLabelBg('Scen','grey')
-    app.addTextArea('ScenSet')
-    app.getTextAreaWidget('ScenSet').config(font="Courier 20")
-    app.addButtons(['save scenario settings','run'],settings_press)
+        app.addLabel('fasta','simulation output')
+        app.setLabelBg('fasta','grey')
+        app.addTextArea('fasta_text')
+        app.getTextAreaWidget('fasta_text').config(font="Courier 20")
+        app.addButtons(['save fasta','view highlighter','view nj tree'],settings_press)
 
-    app.addLabel('fasta','simulation output')
-    app.setLabelBg('fasta','grey')
-    app.addTextArea('fasta_text')
-    app.getTextAreaWidget('fasta_text').config(font="Courier 20")
-    app.addButtons(['save fasta','view highlighter','view nj tree'],settings_press)
+if __name__ == '__main__':
+    gui_run()

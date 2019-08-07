@@ -1,16 +1,16 @@
 import os
 import sys
+import time
+
+import matplotlib.pyplot as plt
+import numpy
+import tqdm
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 dir_path_up = os.sep.join(dir_path.split(os.sep)[:-1])
 sys.path.append(dir_path_up+os.sep+'Scenarios')
+
 from virus_passaging import passaging
-
-import matplotlib.pyplot as plt
-import numpy
-import time
-import tqdm
-
 
 class progress_plot():
     def __init__(self):

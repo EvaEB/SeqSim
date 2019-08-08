@@ -10,8 +10,9 @@ All other functionalities (calculation of fitness, mutating sequences, etc.) are
 as in the original simulation code
 
 '''
-import simulation as sim
-from simulation import Population, Seq
+from __future__ import print_function
+from . import simulation as sim
+from .simulation import Population, Seq
 import random
 
 class Simulation(sim.Simulation):
@@ -53,7 +54,7 @@ class Simulation(sim.Simulation):
                 self.current_gen.delete_sequence(to_del)
 
         elif n_seq == 0:
-            print 'died out'
+            print('died out')
             raise NotImplementedError('population died out')
 
         self.n_seq = len(self.current_gen)
@@ -65,4 +66,4 @@ if __name__ == '__main__':
     sim_test = Simulation(R0 = 2,max_pop=10000,n_seq_init=1000)
     for i in tqdm(range(50)):
         sim_test.new_generation()
-    print sim_test.current_gen
+    print(sim_test.current_gen)

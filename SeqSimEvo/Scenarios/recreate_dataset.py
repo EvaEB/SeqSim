@@ -123,7 +123,7 @@ def recreate_dataset(sample_sizes,nr_mutations,apobec,model=None,parameters=None
     elif action == 'fasta':
         return fasta
 
-if __name__ == '__main__':
+def main():
     import argparse
 
     #parse command line arguments
@@ -192,3 +192,6 @@ if __name__ == '__main__':
 
     if (action == 'n_generations') or (action == 'fasta'):
         print(simulation)
+
+if __name__ == '__main__':
+    main()

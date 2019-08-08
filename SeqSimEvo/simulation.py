@@ -4,6 +4,7 @@ Created on Thu Dec 15 13:42:33 2016
 @author: eva
 """
 from __future__ import print_function
+import pkg_resources
 import sys
 from collections import Counter
 import random
@@ -153,20 +154,21 @@ class Simulation(object):
             fitness_table (4xseq_len): fitness table to use for the simulation
             n_seq_init (int): initial number of sequences (default 1)
         '''
+
+        if type(simulation_settings) is list:
+            simulation_settings = simulation_settings[0]
         try:
             with open(simulation_settings) as f:
                 self.settings = yaml.safe_load(f)
         except IOError:
-            path = os.path.dirname(os.path.abspath(inspect.stack()[0][1]))
-            with open(path+'/simulation_settings/'+simulation_settings) as f:
+            path = pkg_resources.resource_filename('SeqSimEvo','simulation_settings/')
+            with open(path+simulation_settings) as f:
                 self.settings = yaml.safe_load(f)
         except TypeError:
             self.settings = simulation_settings
 
         for key, value in kwargs.items():
             self.settings[key] = value
-
-
 
         self.settings['subs_matrix'] = np.array(self.settings['subs_matrix'])
 

@@ -1,12 +1,13 @@
 import os
 from collections import OrderedDict
+import pkg_resources
 
 import matplotlib
 matplotlib.use('TkAgg')
 from appJar import gui
 import yaml
 
-import scenarios
+from . import scenarios
 import fasta_tools
 
 
@@ -14,11 +15,10 @@ def select():
     selection = app.getAllOptionBoxes()
 
     #display default settings organism
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    dir_path_up = os.sep.join(dir_path.split(os.sep)[:-1])
-    sim_settings_path = dir_path_up+os.sep+'SeqSimEvo'+os.sep+'simulation_settings/'
-    scenario_settings_path = dir_path_up+os.sep+'Scenarios'+os.sep+'settings_files/'
-
+    global sim_settings_path
+    sim_settings_path = pkg_resources.resource_filename('SeqSimEvo','simulation_settings/')
+    global scenario_settings_path
+    scenario_settings_path = pkg_resources.resource_filename('SeqSimEvo','Scenarios/settings_files/')
     with open(sim_settings_path+selection['Organism']) as f:
         OrgSettings = f.read()
     app.clearTextArea('OrgSet')
@@ -40,7 +40,7 @@ def settings_press(btn):
     if btn == 'save organism settings':
         #specify file location
         filename = app.saveBox(title='Save organism settings',
-                               dirName='../seq_sim/simulation_settings',
+                               dirName=sim_settings_path,
                                fileExt="")
         #save file
         with open(filename, 'w') as f:
@@ -48,7 +48,7 @@ def settings_press(btn):
     elif btn == 'save scenario settings':
         #specify file location
         filename = app.saveBox(title='Save scenario settings',
-                               dirName='settings_files/',
+                               dirName=scenario_settings_path,
                                fileExt="")
         #save file
         with open(filename, 'w') as f:
@@ -72,15 +72,14 @@ def settings_press(btn):
 
 def gui_run():
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    global app
     with gui('SeqSim') as app:
-        global app
         dir_path = os.path.dirname(os.path.realpath(__file__))
         dir_path_up = os.sep.join(dir_path.split(os.sep)[:-1])
-        sim_settings_path = dir_path_up+os.sep+'SeqSimEvo'+os.sep+'simulation_settings/'
+        sim_settings_path = pkg_resources.resource_filename('SeqSimEvo','simulation_settings/')
+        scenario_settings_path = pkg_resources.resource_filename('SeqSimEvo','Scenarios/settings_files/')
         Organism_options = os.listdir(sim_settings_path)
         app.addLabelOptionBox('Organism',Organism_options)
-
-        scenario_settings_path = dir_path_up+os.sep+'Scenarios'+os.sep+'settings_files/'
         Scenario_options = os.listdir(scenario_settings_path)
         app.addLabelOptionBox('Scenario',Scenario_options)
 

@@ -1,9 +1,3 @@
-"""A setuptools based setup module.
-See:
-https://packaging.python.org/guides/distributing-packages-using-setuptools/
-https://github.com/pypa/sampleproject
-"""
-
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
 from os import path
@@ -32,23 +26,25 @@ setup(
     author='Eva Bons',
     author_email='eva.bons@gmail.com',
 
-    packages=find_packages(exclude=['contrib', 'docs', 'tests']),
+    packages=find_packages(exclude=['contrib', 'docs', 'Tests']),
 
     python_requires='>=2.7',
-    install_requires=['matplotlib==2.2','appJar','pyyaml','numpy==1.15','tqdm','scipy==1.1'],
+    install_requires=['matplotlib==2.2','appJar','pyyaml','numpy==1.15.1','tqdm','scipy==1.1'],
 
     package_data={
-        'Scenarios': ['settings_files/*'],
-        'SeqSimEvo': ['simulation_settings/*']
+        'SeqSimEvo': ['simulation_settings/*','Scenarios/settings_files/*']
     },
 
     entry_points={
         'console_scripts': [
-            'SeqSimEvo=GUI:gui_run',
+            'SeqSimEvo_gui=SeqSimEvo.GUI:gui_run',
+            'SeqSimEvo_multipleCompartments=SeqSimEvo.Scenarios:multiple_compartments.main',
+            'SeqSimEvo_recreateDataset=SeqSimEvo.Scenarios:recreate_dataset.main',
+            'SeqSimEvo_simpleSim=SeqSimEvo.Scenarios:simple_sim.main'
         ],
     },
 
-    project_urls={  # Optional
+    project_urls={
         'Bug Reports': '',
         'Funding': '',
         'Source': '',

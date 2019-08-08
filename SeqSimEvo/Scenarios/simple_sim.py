@@ -7,7 +7,7 @@ preforms a simple simulation of sequence evolution
 from __future__ import print_function
 import argparse
 
-import SeqSimEvo as seq_sim
+import SeqSimEvo.simulation as seq_sim
 
 def run(scenario_settings, sim_settings):
     sim = seq_sim.Simulation(simulation_settings=sim_settings)
@@ -28,7 +28,7 @@ def run(scenario_settings, sim_settings):
 
     return output
 
-if __name__ == '__main__':
+def main():
     #parse command line arguments
     parser = argparse.ArgumentParser(description='simple simulation of sequence evolution')
     parser.add_argument('-n', nargs=1, type=int,
@@ -63,3 +63,6 @@ if __name__ == '__main__':
 
     #run scenario
     print(run(settings, args.o))
+
+if __name__ == '__main__':
+    main()

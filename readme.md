@@ -1,21 +1,16 @@
 (c) 2019 Eva Bons
 
-# seq_sim - simulations of viral diversification
+# SeqSimEvo - simulations of sequence evolution with selection
 
-## installation
-First, make sure you have a working python installation (2.7/3.6), with the following packages installed
-* numpy
-* scipy
-* pyyaml
-* Tqdm
-* Ete3
-* Ipython
-* matplotlib
+## Installation
+installation requires a working installation of python (v2.7 or higher)
 
-Currently, I have not managed to find an easy way to install/manage packages, sorry!
-To install, you'll  have to manually put the `seq_sim` folder somewhere in your `PYTHONPATH`
+    python setup.py install
 
-## usage
+## Usage
+Simulations can be run in several ways:
+  * run a pre-existing scenario
+
 ### initialize the simulation
     import seq_sim
 

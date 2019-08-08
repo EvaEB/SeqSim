@@ -55,6 +55,8 @@ class multiple_compartments(object):
                 n_seq = n_seq_init[i]
             except IndexError:
                 n_seq = n_seq_init[0]
+            except TypeError:
+                n_seq = n_seq_init
 
 
             if names is not None:
@@ -132,74 +134,77 @@ def run(scenario_settings,organism_settings):
 
     return fasta
 
+def main():
+        import argparse
+        import ast
+
+        parser = argparse.ArgumentParser(description='simulation of evolution in multiple compartments')
+
+        parser.add_argument('-o', type=str,default='HIV',
+                            help='organism settings to use, defaults to HIV')
+        parser.add_argument('-nc', type=int,default=2,
+                            help='number of compartments to simulate. Defaults to 2')
+        parser.add_argument('-ng', type=int,default=100,
+                            help='number of generations to simulate. Defaults to 100')
+        parser.add_argument('-d', type=float,default=0,
+                            help='how different the fitness tables are for each of \
+                                  the compartments (0 - all the same, parallel \
+                                  evolution, 1 - all different, complete divergent \
+                                  evolution). Defaults to 0')
+        parser.add_argument('-mig',default='[[0,0],[0,0]]',type=str,
+                            help='migration rate matrix, \
+                                  or single value (use migration rate between all populations),\
+                                  defaults to no migration')
+        parser.add_argument('-names',nargs='+',default = None,
+                            help='names of the compartments')
+        parser.add_argument('-ninit',nargs='+',default = None,type=int,
+                            help='number of initial sequences per compartment, defaults to one per compartment')
+        parser.add_argument('-mut',nargs='+',default = None,type=float,
+                            help='mutation rates per compartment, defaults to the value in the organism settings')
+        parser.add_argument('-R0',nargs='+',default = None,type=float,
+                            help='R0 per compartment')
+        parser.add_argument('-maxpop',nargs='+',default = None,type=int,
+                            help='maximum population per compartment')
+        parser.add_argument('-st',nargs='+',default = None,type=int,
+                            help='sampling times per compartment,defaults to last')
+        parser.add_argument('-sa', nargs='+',default=10,type=int,
+                            help='sampling amount per compartment,defaults to 10')
+
+        args = parser.parse_args()
+
+        settings = {}
+        settings['n_comparments'] = args.nc
+        settings['diverse_index'] = args.d
+        settings['n_gen'] = args.ng
+
+        if '[' not in args.mig:
+            settings['migration'] = np.ones([len(args.ninit)]*2)*float(args.mig[0])
+        else:
+            settings['migration'] = ast.literal_eval(args.mig)
+
+        settings['sampling_amount'] = args.sa
+
+        if args.st is None:
+            settings['sampling_times'] = [args.ng]
+        else:
+            settings['sampling_times'] = args.st
+
+        if args.names is not None:
+            settings['names'] = args.names
+
+        if args.ninit is not None:
+            settings['n_seq_init'] = args.ninit
+
+        if args.mut is not None:
+            settings['mut_rate'] = args.mut
+
+        if args.R0 is not None:
+            settings['R0'] = args.R0
+
+        if args.maxpop is not None:
+            settings['max_pop'] = args.maxpop
+
+        print(run(settings,  args.o))
+
 if __name__ == '__main__':
-    import argparse
-    import ast
-
-    parser = argparse.ArgumentParser(description='simulation of evolution in multiple compartments')
-
-    parser.add_argument('-o', type=str,default='HIV',
-                        help='organism settings to use, defaults to HIV')
-    parser.add_argument('-nc', type=int,default=2,
-                        help='number of compartments to simulate. Defaults to 2')
-    parser.add_argument('-ng', type=int,default=100,
-                        help='number of generations to simulate. Defaults to 100')
-    parser.add_argument('-d', type=float,default=0,
-                        help='how different the fitness tables are for each of \
-                              the compartments (0 - all the same, parallel \
-                              evolution, 1 - all different, complete divergent \
-                              evolution). Defaults to 0')
-    parser.add_argument('-mig',default='[[0,0],[0,0]]',type=str,
-                        help='migration rate matrix, \
-                              or single value (use migration rate between all populations),\
-                              defaults to no migration')
-    parser.add_argument('-names',nargs='+',default = None,
-                        help='names of the compartments')
-    parser.add_argument('-ninit',nargs='+',default = None,type=int,
-                        help='number of initial sequences per compartment, defaults to one per compartment')
-    parser.add_argument('-mut',nargs='+',default = None,type=float,
-                        help='mutation rates per compartment, defaults to the value in the organism settings')
-    parser.add_argument('-R0',nargs='+',default = None,type=float,
-                        help='R0 per compartment')
-    parser.add_argument('-maxpop',nargs='+',default = None,type=int,
-                        help='maximum population per compartment')
-    parser.add_argument('-st',nargs='+',default = None,type=int,
-                        help='sampling times per compartment,defaults to last')
-    parser.add_argument('-sa', nargs='+',default=10,type=int,
-                        help='sampling amount per compartment,defaults to 10')
-
-    args = parser.parse_args()
-
-    settings = {}
-    settings['n_comparments'] = args.nc
-    settings['diverse_index'] = args.d
-    settings['n_gen'] = args.ng
-
-    if '[' not in args.mig:
-        settings['migration'] = np.ones([len(args.ninit)]*2)*float(args.mig[0])
-    else:
-        settings['migration'] = ast.literal_eval(args.mig)
-
-    settings['sampling_amount'] = args.sa
-
-    if args.st is None:
-        settings['sampling_times'] = [args.ng]
-    else:
-        settings['sampling_times'] = args.st
-
-    if args.names is not None:
-        settings['names'] = args.names
-
-    if args.ninit is not None:
-        settings['n_seq_init'] = args.ninit
-
-    if args.mut is not None:
-        settings['mut_rate'] = args.mut
-
-    if args.R0 is not None:
-        settings['R0'] = args.R0
-
-    if args.maxpop is not None:
-        settings['max_pop'] = args.maxpop
-
-    print(run(settings,  args.o))
+    main()

@@ -11,30 +11,30 @@ installation requires a working installation of python (v2.7 or higher)
 Simulations can be run in several ways:
   * run a pre-existing scenario
 
-### initialize the simulation
-    import seq_sim
+### Initialize the simulation
+    from SeqSimEvo import simulation
 
-    sim = seq_sim.Simulation(simulation_settings)
+    sim = simulation.Simulation(simulation_settings)
 
 simulation settings can be set by
-* providing a default (currently, 'HIV' and 'phix174' are avaiable)
+* providing a default (currently, 'HIV' and 'phix174' are available)
 
 		sim = seq_sim.Simulation(simulation_settings)
 * pointing to your own settings file (a template is available in the folder `simulation_settings`):
 
 		sim = seq_sim.Simulation(simulation_settings = 'path/to/my/settings')
-* providing the settings a keyword arguments (this is always possible, and will override settings provided in a settings file): e.g.
+* providing the settings as keyword arguments (this is always possible, and will override settings provided in a settings file): e.g.
 
 	 	sim = seq_sim.Simulation(mut_rate = 1e-10, model='lognormal', parameters = {'fl': 0.2, 'mu':0.2, 'sigma': 0.2})
 	 	sim = seq_sim.Simulation('phix174', model='spikes')
 
-see `help(seq_sim.Simulation)` for all possible settings
+see `help(simulation.Simulation)` for all possible settings
 
-### run a simulation
+### Run a simulation
     for gen in range(nr_gen):
 	    sim.new_generation()
 
-### get output
+### Get output
 * for fasta output of any number of sequences (use `nseq = sim.current_gen.n_seq` for all sequences in the simulation)
 
 		sim.current_gen.to_fasta(n_seq)
@@ -44,17 +44,10 @@ see `help(seq_sim.Simulation)` for all possible settings
 		sim.current_gen.stats()
 
 # Scenarios - simulation of specific scenarios using SeqSimEvo
-## The gui
-### Installation
-Install dependencies:
-  * appJar `pip install appjar`
-  * pyyaml `pip install pyyaml`
-  * fasta_tools (available on my git - ask for access if you don't have it)
-
-make sure seq_sim is in the same folder as sim_scipts (otherwise some file references don't work)
+## The GUI
 
 ### Usage
-* start `gui.py` (`python gui.py` in a terminal)
+* run `SeqSimEvo_gui` in the terminal
 * choose the organism and scenarios
 * change settings if required (changes are not saved to the original file!)
 * run a simulation
@@ -70,7 +63,7 @@ Add an entry to the `run` funtion in `scenarios.py`
     if scenario == 'NewScenario':
       fasta = new_scenario(scenario_settings, organism_settings)
 
-Add a settings file (or template) to settings_files. Filetype must be of the format `NewScenario[_something]`
+Add a settings file (or template) to settings_files. the File type must be of the format `NewScenario[_something]`
 
 
 ### Making new settings files
@@ -78,10 +71,23 @@ Add a settings file (or template) to settings_files. Filetype must be of the for
  * The file must be in the 'yaml' format (http://www.yaml.org/spec/1.2/spec.html)
  * Due to issues with scientific notation parsing, it is important to always use a decimal point when using scientific notation of numbers (`1.0e5` rather than `1e5`)
 
+## Simple simulation
+simply run a simulation for a certain number of generations.
+
+run `SeqSimEvo_simpleSim [options]` in the terminal.
+
+see `SeqSimEvo_simpleSim -h`
+
 ## recreate dataset
 run a simulation of sequence diversification until the number of unique mutations matches that in a given dataset
-*more info on command-line usage coming*
 
-## virus passaging
-run a simulation of virus passaging experiments
-*more info on command-line usage coming*
+run `SeqSimEvo_recreateDataset [options]` in the terminal.
+
+see `SeqSimEvo_recreateDataset -h` for all options.
+
+## multiple multiple_compartments
+run a simulations with multiple compartments, with migration between the compartments
+
+run `SeqSimEvo_multipleCompartments [options]` in the terminal.
+
+see `SeqSimEvo_multipleCompartments -h`

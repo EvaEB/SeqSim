@@ -9,7 +9,7 @@ from __future__ import print_function
 from collections import Counter
 import numpy as np
 import pickle
-import SeqSimEvo as sim
+from SeqSimEvo import simulation as sim
 
 class stats(object):
     def __init__(self):

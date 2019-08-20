@@ -13,7 +13,7 @@ from copy import deepcopy as copy
 dir_path = os.path.dirname(os.path.realpath(__file__))
 dir_path_up = os.sep.join(dir_path.split(os.sep)[:-1])
 sys.path.append(dir_path_up+os.sep+'SeqSimEvo')
-import SeqSimEvo as sim
+from SeqSimEvo import simulation as sim
 
 from tqdm import tqdm
 import yaml
@@ -125,7 +125,7 @@ if __name__ == '__main__':
                         help='list of transfer proportions for each population, \
                               or single value (use same transfer proportion for all populations),\
                               defaults to 0.01 per population')
-    parser.add_argument('-mig',default='[[0,0],[0,0]]',type=str,
+    parser.add_argument('-mig',default='0',type=str,
                         help='migration rate matrix, \
                               or single value (use migration rate between all populations),\
                               defaults to no migration')
@@ -155,7 +155,6 @@ if __name__ == '__main__':
         settings['migration'] = np.ones([len(args.init)]*2)*float(args.mig[0])
     else:
         settings['migration'] = ast.literal_eval(args.mig)
-
 
     settings['sampling'] = args.sampling
 

@@ -22,26 +22,30 @@ class Seq(object):
     '''
     Sequence class.
 
-    Attributes:
-        translation (str): the translation order from bases (ATGC) to numbers
-        len (int): the length of the sequence
-        sequence (list): a list representation of the sequence
+    **Attributes**:
+    * `translation` (str): the translation order from bases (ATGC) to numbers
+    * `len` (int): the length of the sequence
+    * `sequence` (list): a list representation of the sequence
+
+    **Keyword Arguments**:
+    * `seq_len` (int): length of the sequence to generate. Will be ignored if `seq` is provided. Default 100.
+    * `base_dist` (list): list of length 4, base distribution in order A-G-T-C.
+    Distribution is cumulative: equal base distribution would be represented
+    as [0.25,0.5,0.75,1]. When not provided, will default to equal base distribution
+    * `seq` (str): the sequence to use. When not provided, a random sequence
+    will be generated according to `seq_len` and `base_dist`
     '''
     def __init__(self, seq_len=100, base_dist=None, seq='',**kwargs):
         '''
         Create a sequence object.
 
-        Keyword Arguments:
-            seq_len (int): length of the sequence to generate. Will be
-                ignored if `seq` is provided. Default 100.
-            base_dist (list): list of length 4, base distribution in order A-G-T-C.
-                Distribution is cumulative: equal base distribution would be
-                represented as [0.25,0.5,0.75,1].
-                When not provided, will default to equal base distribution
-            seq (str): the sequence to use. When not provided, a random
-                sequence will be generated according to `seq_len` and
-                `base_dist
-        '''
+        *Keyword Arguments*:
+        * `seq_len` (int): length of the sequence to generate. Will be ignored if `seq` is provided. Default 100.
+        * `base_dist` (list): list of length 4, base distribution in order A-G-T-C.
+        Distribution is cumulative: equal base distribution would be represented
+        as [0.25,0.5,0.75,1]. When not provided, will default to equal base distribution
+        * `seq` (str): the sequence to use. When not provided, a random sequence
+        will be generated according to `seq_len` and `base_dist`  '''
         self.translation = 'AGTC'
         if seq == '':
             self.generate_seq(seq_len, base_dist)
@@ -66,11 +70,11 @@ class Seq(object):
         '''
         translate a sequence from bases to numbers
 
-        Arguments:
-            seq: string (base) representation of the sequence
+        **Arguments**:
+        * `seq`: string (base) representation of the sequence
 
-        Returns:
-            list (number) representation of the sequence
+        **Returns**:
+        list (number) representation of the sequence
         '''
         sequence = []
         for i in seq:
@@ -82,13 +86,13 @@ class Seq(object):
         Sets the sequence to a random sequence of seq_len bases according to the
         base distribution
 
-        Arguments:
-            seq_len (int): the length of the sequence to generate
-            base_dist (list): list of length 4, base distribution in order A-G-T-C.
-                Distribution is cumulative: equal base distribution would be
-                represented as [0.25,0.5,0.75,1] (which is the default)
+        **Arguments**:
+        * `seq_len` (int): the length of the sequence to generate
+        * `base_dist` (list): list of length 4, base distribution in order A-G-T-C.
+        Distribution is cumulative: equal base distribution would be
+        represented as [0.25,0.5,0.75,1] (which is the default)
 
-        Returns:
+        **Returns**:
             Nothing.
         '''
         if seq_len < 0:
@@ -106,21 +110,49 @@ class Simulation(object):
     '''
     Sequence simulation object
 
-    Attributes:
-        settings (Dict): all simulation settings
-        mut_rate (float): mutation rate for the simulation (adapted for potential
-            increase in G-A rate)
-        sequence (Seq): ancestor sequence the simulation starts with
-        fitness_table (4xseq_len list): table containing fitness values of all
-            possble bases in the sequence
-        gen (int): the current generation
-        average_fitness (float): average fitness of the population
-        effective_pop (int): effective population size of current generation
-            (number of unique sequences)
-        n_seq (int) total number of sequenes in the current generation
-        current_gen (Population): the current generation
-        mutations_per_seq (list): number of mutations in the next 1000 mutation
-            events. implemented for efficiency.
+    **Attributes**:
+    * `settings` (Dict): all simulation settings
+    * `mut_rate` (float): mutation rate for the simulation (adapted for potential
+    increase in G-A rate)
+    * `sequence` (Seq): ancestor sequence the simulation starts with
+    * `fitness_table` (4xseq_len list): table containing fitness values of all
+    possble bases in the sequence
+    * `gen` (int): the current generation
+    * `average_fitness` (float): average fitness of the population
+    * `effective_pop` (int): effective population size of current generation
+    (number of unique sequences)
+    * `n_seq` (int) total number of sequenes in the current generation
+    * `current_gen` (Population): the current generation
+    * `mutations_per_seq` (list): number of mutations in the next 1000 mutation
+    events. implemented for efficiency.
+
+    **Arguments**:
+    * `simulation_settings` (str): either one of the default simulation
+    settings (HIV (default), phix174), or a path to a settings file
+    in yaml-format
+
+    **note**: loaded simulation settings will be overwritten by parameters
+        provided as keyword arguments
+
+    **Keyword Arguments**:
+    * `model` (str): model to use for the MFED (otions: 'neutral'(default),
+    'lognormal','exponential','spikes','beta', 'from_data','steps')
+    * `parameters` (dict): parameters for the MFED
+    * `mut_rate` (float): mutation rate per site per generation (default = 2.16e-5)
+    * `subs_matrix` (4x4 list): cumulative substitution matrix
+    rows = from, columns = to
+    * `seq_len` (int): length of sequence to simulate (default 2600).
+    used only if no sequence is provided
+    * `basedist` (4x1 list): list of cumulutive distribution of bases used
+    for generating the sequence in order [A,G,T,C]. default: [0.25,0.5,0.75,1]
+    * `R0` (float): initial average amount of offspring per sequence
+    * `ga_increase` (float): Increase in G-A mutation rate (defaul: 1 (no increase))
+    * `max_pop` (int): maximum population size
+    * `name` (str): name of the simulation (used in output)
+    * `sequence` (Seq): the sequence to use for the simulation
+    * `fitness_table` (4xseq_len): fitness table to use for the simulation
+    * `n_seq_init` (int): initial number of sequences (default 1)
+
     '''
 
     def __init__(self, simulation_settings='HIV', **kwargs):
@@ -302,11 +334,11 @@ class Simulation(object):
         '''
         get the fitness effect of a mutation at location to target_base
 
-        Arguments:
-            location (int): the position in the genome (0-based counting)
-            target_base (int): the base of which to get the fitness effect
+        **Arguments**:
+        * `location` (int): the position in the genome (0-based counting)
+        * `target_base` (int): the base of which to get the fitness effect
 
-        Returns:
+        **Returns**:
             the fitness effect at this position (float)
         '''
         return self.fitness_table[target_base,location]
@@ -316,14 +348,14 @@ class Simulation(object):
         get the number of offspring of a sequence according to the fitness
         of that sequence
 
-        Arguments:
-            sequence_id (int): the id of the sequence to get offspring of
-            return_fitness (Bool): return fitness as well
+        **Arguments**:
+        * `sequence_id` (int): the id of the sequence to get offspring of
+        * `return_fitness` (Bool): return fitness as well
 
-        Returns:
-            the calculated number of offspring (int) (if return_fitness is False)
-            tuple (int,float): calculated number of offsprint and the fitness of
-                the sequence (if return_fitness is True)
+        **Returns**:
+        the calculated number of offspring (int) (if return_fitness is False)
+        tuple (int,float): calculated number of offsprint and the fitness of
+        the sequence (if return_fitness is True)
         """
         R0 = self.settings['R0']
         changes = self.current_gen.get_seq(sequence_id)
@@ -342,13 +374,13 @@ class Simulation(object):
         """
         mutates a sequence (with existing mutations)
 
-        Arguments:
-            pop (Population): the population which holds the new generation
-            seq_id_new (int): the sequence ID of the new sequence
-            seq_id_old (int): the sequence ID of the old sequence
-                (in the current generation)
+        **Arguments**:
+        * `pop` (Population): the population which holds the new generation
+        * `seq_id_new` (int): the sequence ID of the new sequence
+        * `seq_id_old` (int): the sequence ID of the old sequence
+        (in the current generation)
 
-        Returns:
+        **Returns**:
             True/False (did the sequence mutate or not?)
         """
         #get the number of mutations that will take place
@@ -389,13 +421,13 @@ class Simulation(object):
         """
         Create a new generation in the simulation
 
-        Arguments:
-            new_gen (Population): the population to store the new generation in
-                (a new Population instance will be created if left out)
-            dieout (Bool): allow the populations to die out (True) or redo
-                new_generation if the population died out (False, default)
+        **Arguments**:
+        * `new_gen` (Population): the population to store the new generation in
+        (a new Population instance will be created if left out)
+        * `dieout` (Bool): allow the populations to die out (True) or redo
+        new_generation if the population died out (False, default)
 
-        Returns:
+        **Returns**:
             Nothing. Updates current_gen, effective_pop, gen, average_fitness,
             and n_seq
         """
@@ -462,11 +494,11 @@ class Simulation(object):
         create a deep copy of the simulation, number of generations will be set
         back to 0
 
-        Arguments:
-            name: the name to use for the copy
-            n_seq: the number of sequences to keep in the copy. -1: original state
+        **Arguments**:
+        * `name`: the name to use for the copy
+        * `n_seq`: the number of sequences to keep in the copy. -1: original state
 
-        Returns:
+        **Returns**:
             a copy of the simulation in its original state
         '''
         if n_seq == -1: #original state
@@ -490,12 +522,20 @@ class Population():
     """
     class representing a population beloning to a simulation
 
-    Attributes:
-        changed (set): the sequence IDs that countain a mutation
-        changes (dict): contains a numpy array per sequence with the position
-            and new base per mutation
-        sim (Simulation): the simulation to which this Population belongs
-        n_seq: the number of sequences in the population
+    **Attributes**:
+    * `changed` (set): the sequence IDs that countain a mutation
+    * `changes` (dict): contains a numpy array per sequence with the position
+    and new base per mutation
+    * `sim` (Simulation): the simulation to which this Population belongs
+    * `n_seq`: the number of sequences in the population
+
+    **Arguments**:
+    * `simulation` (Simulation): the simulation to which this Population belongs
+    * `changes` (dict): for pre-exsisting changes. Numpy array per sequence with
+    the position and new base per mutation
+    * `changed` (set): for pre-existing changes: the sequence IDs that countain a mutation
+    * `n_seq` (int): number of sequences in the population (default 1)
+
     """
     def __init__(self, simulation, changes=None, changed=None, n_seq=None,**kwargs):
         """
@@ -548,11 +588,11 @@ class Population():
         Prints a summary of the mutations that have occured in all seq_ids in
         the format: #mutID (from-pos-to)\tsequence\tpatient\n
 
-        Arguments:
-            seq_ids (list): the ids of the sequences to print a summary of
+        **Arguments**:
+        * `seq_ids` (list): the ids of the sequences to print a summary of
 
-        Returns:
-            Nothing. Output is printed to stdout.
+        **Returns**:
+        Nothing. Output is printed to stdout.
         '''
         if any(np.array(seq_ids)>self.n_seq):
             raise IndexError('seqID out of range')
@@ -571,12 +611,12 @@ class Population():
     def sample_to_string(self, seq_ids):
         ''' create a summary of the mutations that have occured
 
-        Arguments:
-            seq_ids (list): the ids of the sequences to print a summary of
+        **Arguments**:
+        * `seq_ids` (list): the ids of the sequences to print a summary of
 
-        Returns:
-            string: summary of the mutations that have occured in the seq_ids,
-                in the format "#mutID (from-pos-to)\tsequence\tpatient"
+        **Returns**:
+        * `string`: summary of the mutations that have occured in the seq_ids,
+        in the format "#mutID (from-pos-to)\tsequence\tpatient"
 
         '''
         string = '#mutID (from-pos-to)\tsequence\tpatient\n'
@@ -596,10 +636,10 @@ class Population():
         If the sample size is larger than the population, the whole population is
         returned
 
-        Arguments:
-            sample_size (int): the size of the sample
+        **Arguments**:
+        * `sample_size` (int): the size of the sample
 
-        Returns:
+        **Returns**:
             a list of sequence IDs randomly sampled from the population
         '''
         try:
@@ -612,11 +652,11 @@ class Population():
         ''' delete sequence from the population.
         Sequence IDs will be reassigned to fit within the new number of sequences.
 
-        Arguments:
-            ID (int): the sequence ID of the sequence to remove
+        **Arguments**:
+        * `ID` (int): the sequence ID of the sequence to remove
 
-        Returns:
-            nothing. Sequence is removed in-place.
+        **Returns**:
+        nothing. Sequence is removed in-place.
         '''
         self.n_seq-=1
         if self.get_seq(ID) is not None:
@@ -636,11 +676,11 @@ class Population():
 
         add a sequence, optionally with certain changes (as a list of position, new), to the population
 
-        Arguments:
-            changes: the changes present in this sequence
+        **Arguments**:
+        * `changes`: the changes present in this sequence
 
-        Returns:
-            the sequence ID of the newly added sequence
+        **Returns**:
+        the sequence ID of the newly added sequence
         '''
         self.n_seq += 1
         if changes is not None:
@@ -652,12 +692,12 @@ class Population():
     def add_change(self, seq_id, pos, target):
         ''' add a change to an existing sequence
 
-        Arguments:
-            seq_id (int): the sequence ID to add the change to
-            pos (int): the position of the change
-            target (int): the new base at the changed position
+        **Arguments**:
+        * `seq_id` (int): the sequence ID to add the change to
+        * `pos` (int): the position of the change
+        * `target` (int): the new base at the changed position
 
-        Returns:
+        **Returns**:
             Nothing. Population is changed in-place.
         '''
         if pos > len(self.sim.sequence):
@@ -688,14 +728,14 @@ class Population():
     def stats(self):
         ''' return a dict of stats about the population
 
-        Keys in the returned dict:
-            * n_seq: the total number of sequences in the current generation
-            * unmutated: the number of unmutated sequences
-            * total_mutations: the number of mutations in total
-            * unique_mutations: the length of the set of all mutations
-            * majority_mutations: the number of mutations that reached majority
-            * max_fraction: the highest fraction reached by a mutation
-            * GA_rate: the fraction of mutations that are G-to-A
+        **Keys in the returned dict:**
+        * `n_seq`: the total number of sequences in the current generation
+        * `unmutated`: the number of unmutated sequences
+        * `total_mutations`: the number of mutations in total
+        * `unique_mutations`: the length of the set of all mutations
+        * `majority_mutations`: the number of mutations that reached majority
+        * `max_fraction`: the highest fraction reached by a mutation
+        * `GA_rate`: the fraction of mutations that are G-to-A
         '''
         stats = {}
         stats['n_seq'] = self.n_seq
@@ -735,15 +775,15 @@ class Population():
 
         Without any arguments, all sequences in the population will be returned.
 
-        Optional arguments:
-            seq_ids (list): list of sequence IDs to convert to fasta-format
-            n_seq: number of sequences to convert to fasta-format (random draw
-                from population). This number will be ignored if seq_ids is given
-            description (str): description of the sequences, will be added after
-                the sequenceID in the header of each sequence
-            progress (Bool): display a progress bar?
+        **Optional arguments**:
+        * `seq_ids` (list): list of sequence IDs to convert to fasta-format
+        * `n_seq`: number of sequences to convert to fasta-format (random draw
+        from population). This number will be ignored if seq_ids is given
+        * `description` (str): description of the sequences, will be added after
+        the sequenceID in the header of each sequence
+        * `progress` (Bool): display a progress bar?
 
-        Returns:
+        **Returns**:
             str: the selected sequences in fasta-format
         '''
         string = ''
@@ -778,8 +818,8 @@ class Population():
     def get_seq(self, sequence_id):
         ''' get the changes in the sequence with id sequence_id
 
-        Raises:
-            IndexError: when sequence_id is out of bounds
+        **Raises**:
+            `IndexError`: when sequence_id is out of bounds
         '''
         if sequence_id > self.n_seq:
             raise IndexError('sequence_id is out of bounds')

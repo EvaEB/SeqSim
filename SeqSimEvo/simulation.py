@@ -224,7 +224,7 @@ class Simulation(object):
                     self.settings['parameters']['fn'] = 1 - (self.settings['parameters']['fl']+ \
                                                              self.settings['parameters']['fd']+ \
                                                              self.settings['parameters']['fb'])
-            self.fitness_table = self.__getfitness_table()
+            self.fitness_table = self.getfitness_table()
         else:
             self.fitness_table = self.settings['fitness_table']
 
@@ -266,7 +266,7 @@ class Simulation(object):
         return string
 
 
-    def __getfitness_table(self):
+    def getfitness_table(self):
         '''creates a table with random fitness values according to model and
         parameters par in settings'''
         seq_len = self.sequence.len

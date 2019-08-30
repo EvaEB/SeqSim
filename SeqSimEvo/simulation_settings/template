@@ -10,7 +10,7 @@ parameters:
     sigma:  #lognormal
     loc:    #spikes (location of spikes)
     freq:   #spikes (fraction at spikes)
-
+offspring_distribution: 'poisson'
 
 #settings for new mutations
 mut_rate: 1e-6

@@ -1,5 +1,6 @@
 #settings for the MFED
 model: 'neutral'
+offspring_distribution: 'poisson'
 
 #settings for new mutations
 mut_rate: 2.16e-5

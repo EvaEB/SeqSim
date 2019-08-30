@@ -4,6 +4,7 @@ parameters:
     fl: 0.182
     fb: 0.053
     lb: 0.202
+offspring_distribution: 'poisson'
 
 #settings for new mutations
 mut_rate: 2.16e-5

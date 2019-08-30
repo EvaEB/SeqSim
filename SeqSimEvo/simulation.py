@@ -366,9 +366,15 @@ class Simulation(object):
             for pos, base in zip(changes[:, 0], changes[:, 1]):
                 fitness *= (self.fitness_table[int(base), int(pos)])
 
+        if self.settings['offspring_distribution'] == 'poisson':
+            offspring = np.random.poisson(fitness*R0)
+        elif self.settings['offspring_distribution'] == 'normal':
+            offspring = int(round(np.random.normal(loc=fitness*R0,scale=self.settings['offspring_sigma'])))
+        else:
+            raise ValueError('offspring distribution {} not understood'.format(self.settings['offspring_distribution']))
         if return_fitness:
-            return np.random.poisson(fitness*R0), fitness
-        return np.random.poisson(fitness*R0)
+            return offspring, fitness
+        return offspring
 
     def mutate_seq(self, pop, seq_id_new,seq_id_old):
         """

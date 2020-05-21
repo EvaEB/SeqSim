@@ -26,10 +26,10 @@ setup(
     author='Eva Bons',
     author_email='eva.bons@gmail.com',
 
-    packages=find_packages(exclude=['contrib', 'docs', 'Tests']),
+    packages=find_packages('.',exclude=['contrib', 'docs', 'Tests']),
 
     python_requires='>=2.7',
-    install_requires=['matplotlib==2.2','appJar','pyyaml','numpy==1.15.1','tqdm','scipy==1.1'],
+    install_requires=['matplotlib','appJar','pyyaml','numpy','tqdm','scipy'],
 
     package_data={
         'SeqSimEvo': ['simulation_settings/*','Scenarios/settings_files/*']

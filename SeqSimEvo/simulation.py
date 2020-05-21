@@ -169,7 +169,8 @@ class Simulation(object):
 
         Keyword Arguments:
             model (str): model to use for the MFED (otions: 'neutral'(default),
-                'lognormal','exponential','spikes','beta', 'from_data','steps')
+                'lognormal','exponential','spikes','beta', 'from_data','steps',
+                'lognormal_ben_only')
             parameters (dict): parameters for the MFED
             mut_rate (float): mutation rate per site per generation (default = 2.16e-5)
             subs_matrix (4x4 list): cumulative substitution matrix
@@ -304,12 +305,14 @@ class Simulation(object):
                     if randnr < prob:
                         fitness[i, j] = self.settings['parameters']['loc'][spike]
                         break
-        elif self.settings['model']  == 'lognormal':
+        elif self.settings['model']  in ['lognormal','lognormal_ben_only']:
             for i, j in zip(to_fill[0], to_fill[1]):
                 randnr = random.random()
                 if randnr > self.settings['parameters']['fl']:
                     fitness[i, j] = np.random.lognormal(self.settings['parameters']['mu'],
                                                         self.settings['parameters']['sigma'])
+            if self.settings['model'] == 'lognormal_ben_only':
+                fitness[fitness < 1] = 1
         elif self.settings['model']  == 'beta':
             randnr = random.random()
             if randnr > self.settings['parameters']['fl']:

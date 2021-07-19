@@ -35,7 +35,7 @@ class passaging:
             )
             try:
                 self.sims[i].settings["max_pop"] = self.settings["max_pop"][i]
-            except TypeError:
+            except IndexError:
                 self.sims[i].settings["max_pop"] = self.settings["max_pop"]
         self.output = main_sim.current_gen.to_fasta(n_seq=1, description="consensus")
         self.cur_passage = 0
@@ -64,7 +64,6 @@ class passaging:
                 previous.append(pop.current_gen)
 
             # sample
-
             self.output += pop.current_gen.to_fasta(
                 n_seq=self.settings["sampling"][i],
                 description=" - pop {} - transfer {} ".format(i, self.cur_passage),
@@ -80,7 +79,7 @@ class passaging:
             pop.new_generation()
             try:
                 pop.settings["max_pop"] = self.settings["max_pop"][i]
-            except TypeError:
+            except IndexError:
                 pop.settings["max_pop"] = self.settings["max_pop"]
 
         # handle migration
@@ -125,19 +124,24 @@ if __name__ == "__main__":
         description="simulation of a virus passaging experiment"
     )
     parser.add_argument(
-        "-n", type=int, default=10, help="number of transfers to run the simulation for"
+        "-n",
+        "--transfer-number",
+        type=int,
+        default=10,
+        help="number of transfers to run the simulation for",
     )
     parser.add_argument(
-        "-gen",
+        "-g",
+        "--generations",
         type=int,
         default=2,
         help="number of generations per transfer, defaults to 2",
     )
     parser.add_argument(
-        "-o", nargs=1, default="HIV", help="organism simulation settings to use"
+        "--organism", nargs=1, default="HIV", help="organism simulation settings to use"
     )
     parser.add_argument(
-        "-init",
+        "--init",
         nargs="+",
         default=[1],
         type=int,
@@ -146,7 +150,7 @@ if __name__ == "__main__":
                               defaults to 1 per population",
     )
     parser.add_argument(
-        "-pop",
+        "--max-population",
         nargs="+",
         default=[10000],
         type=int,
@@ -155,7 +159,7 @@ if __name__ == "__main__":
                               defaults to 10000 per population",
     )
     parser.add_argument(
-        "-transfer",
+        "--transfer",
         nargs="+",
         default=1,
         type=float,
@@ -164,7 +168,7 @@ if __name__ == "__main__":
                               defaults to 0.01 per population",
     )
     parser.add_argument(
-        "-mig",
+        "--migration",
         default="0",
         type=str,
         help="migration rate matrix, \
@@ -172,7 +176,7 @@ if __name__ == "__main__":
                               defaults to no migration",
     )
     parser.add_argument(
-        "-sampling",
+        "--sampling",
         nargs="+",
         default=[0],
         type=int,
@@ -181,7 +185,7 @@ if __name__ == "__main__":
                               defaults to no sampling",
     )
     parser.add_argument(
-        "-events",
+        "--events",
         default="",
         type=str,
         help='list of events (changes in parameters) during simulation, \
@@ -189,23 +193,25 @@ if __name__ == "__main__":
                             [passage number] [parameters to change] [new values] : ..."',
     )
 
+    parser.add_argument("--output", type=str, help="output file name")
+
     args = parser.parse_args()
     settings = {}
 
-    settings["n_transfer"] = args.n
+    settings["n_transfer"] = args.transfer_number
 
     settings["pop_size"] = args.init
 
-    settings["max_pop"] = args.pop
+    settings["max_pop"] = args.max_population
 
-    settings["n_gen_per_transfer"] = args.gen
+    settings["n_gen_per_transfer"] = args.generations
 
     settings["transfer_prop"] = args.transfer
 
-    if "[" not in args.mig:
-        settings["migration"] = np.ones([len(args.init)] * 2) * float(args.mig[0])
+    if "[" not in args.migration:
+        settings["migration"] = np.ones([len(args.init)] * 2) * float(args.migration[0])
     else:
-        settings["migration"] = ast.literal_eval(args.mig)
+        settings["migration"] = ast.literal_eval(args.migration)
 
     settings["sampling"] = args.sampling
 
@@ -222,4 +228,8 @@ if __name__ == "__main__":
     settings["events"] = events
 
     # run scenario
-    print(run(settings, args.o))
+    if args.output:
+        with open(args.output) as fd:
+            fd.write(run(settings, args.organism))
+    else:
+        print(run(settings, args.organism))

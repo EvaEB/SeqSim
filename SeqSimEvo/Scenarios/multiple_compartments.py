@@ -7,7 +7,7 @@ the compartments.
 
 '''
 
-from __future__ import print_function
+
 import SeqSimEvo as seq_sim
 import numpy as np
 

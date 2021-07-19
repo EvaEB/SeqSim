@@ -3,7 +3,7 @@ Created on Thu Dec 15 13:42:33 2016
 
 @author: eva
 """
-from __future__ import print_function
+
 import pkg_resources
 import sys
 from collections import Counter
@@ -200,7 +200,7 @@ class Simulation(object):
         except TypeError:
             self.settings = simulation_settings
 
-        for key, value in kwargs.items():
+        for key, value in list(kwargs.items()):
             self.settings[key] = value
 
         self.settings['subs_matrix'] = np.array(self.settings['subs_matrix'])
@@ -210,18 +210,18 @@ class Simulation(object):
                              ((1-self.settings['subs_matrix'][1][1])*self.settings['ga_increase']*
                               self.settings['mut_rate'])])
 
-        if 'sequence' not in self.settings.keys():
+        if 'sequence' not in list(self.settings.keys()):
             self.sequence = Seq(self.settings['seq_len'], self.settings['basedist'])
         else:
             self.sequence = self.settings['sequence']
             self.settings['seq_len'] = self.sequence.len
 
-        if 'fitness_table' not in self.settings.keys():
+        if 'fitness_table' not in list(self.settings.keys()):
             if self.settings['model'] == 'exponential':
                 for par in ['fl','fd','fb']:
-                    if par not in self.settings['parameters'].keys():
+                    if par not in list(self.settings['parameters'].keys()):
                         self.settings['parameters'][par] = 0
-                if 'fn' not in self.settings['parameters'].keys():
+                if 'fn' not in list(self.settings['parameters'].keys()):
                     self.settings['parameters']['fn'] = 1 - (self.settings['parameters']['fl']+ \
                                                              self.settings['parameters']['fd']+ \
                                                              self.settings['parameters']['fb'])
@@ -236,7 +236,7 @@ class Simulation(object):
         self.effective_pop = 1
         self.n_seq = self.settings['n_seq_init']
 
-        if 'pop' not in self.settings.keys():
+        if 'pop' not in list(self.settings.keys()):
             self.current_gen = Population(self, n_seq=int(self.settings['n_seq_init']))
         else:
             self.current_gen = pop
@@ -262,7 +262,7 @@ class Simulation(object):
         string += 'ancestor\t'+str(self.sequence)+'\n'
         string += 'number of generations\t'+str(self.gen)+'\n'
         stats = self.current_gen.stats()
-        for i in stats.keys():
+        for i in list(stats.keys()):
             string += i.replace('_', ' ')+'\t'+str(stats[i])+'\n'
         return string
 
@@ -274,7 +274,7 @@ class Simulation(object):
         #create an array filled with 0 (all lethal)
         fitness = np.zeros((4, seq_len))
         #make sure the fitness benefit of the initial sequence is 1
-        for (i, base) in zip(range(seq_len), self.sequence.sequence):
+        for (i, base) in zip(list(range(seq_len)), self.sequence.sequence):
             fitness[base, i] = 1
         to_fill = np.where(fitness == 0)
 
@@ -455,7 +455,7 @@ class Simulation(object):
         except NameError:
             xrange = range
 
-        for i in xrange(self.current_gen.n_seq):
+        for i in range(self.current_gen.n_seq):
             #find changes in current sequence
             #find the number of offspring based on the mutations that already took place
             n_offspring, fitness = self.get_nr_offspring(i, return_fitness=True)
@@ -467,11 +467,11 @@ class Simulation(object):
 
         if sum(weights) > self.settings['max_pop']:
             #reduce the population randomly to max_pop
-            all_offspring = sorted(np.random.choice(range(self.current_gen.n_seq),
+            all_offspring = sorted(np.random.choice(list(range(self.current_gen.n_seq)),
                                                     size=int(self.settings['max_pop']),
                                                     p=np.array(weights,dtype=float)/sum(weights)))
         else:
-            all_offspring = [i for i,j in enumerate(weights) for k in xrange(j)]
+            all_offspring = [i for i,j in enumerate(weights) for k in range(j)]
 
         #actually create the next generation
         ancestor = -1
@@ -654,7 +654,7 @@ class Population():
         try:
             return np.random.choice(self.n_seq,size=int(sample_size),replace=False)
         except ValueError:
-            return range(self.n_seq)
+            return list(range(self.n_seq))
 
 
     def delete_sequence(self, ID):
@@ -750,7 +750,7 @@ class Population():
         stats['n_seq'] = self.n_seq
         stats['unmutated'] = self.n_seq-len(self.changes)
         if len(self.changed)>0:
-            all_mutations = np.vstack(self.changes.values())
+            all_mutations = np.vstack(list(self.changes.values()))
         else:
             all_mutations = []
         stats['total_mutations'] = len(all_mutations)
@@ -800,7 +800,7 @@ class Population():
             if n_seq is None or n_seq > self.n_seq:
                 n_seq = self.n_seq
 
-            seq_ids = random.sample(range(self.n_seq), n_seq)
+            seq_ids = random.sample(list(range(self.n_seq)), n_seq)
         for i in range(len(seq_ids)):
             seqID = seq_ids[i]
             string += '>'+str(seqID)+''+str(description)+'\n'
@@ -815,11 +815,11 @@ class Population():
     def consensus_sequence(self):
         ''' return the consensus sequence of the population'''
         seq = deepcopy(self.sim.sequence)
-        all_mutations = np.vstack(self.changes.values())
+        all_mutations = np.vstack(list(self.changes.values()))
         all_mutations = [tuple(row) for row in all_mutations]
 
         mutations = Counter(all_mutations)
-        for mut in mutations.keys():
+        for mut in list(mutations.keys()):
             if mutations[mut] >= self.n_seq/2.0:
                 seq.sequence[int(mut[0])] = int(mut[1])
         return seq
@@ -862,8 +862,8 @@ class Population():
             return np.mean(HDs)
         elif action == 'Poisson_fit':
             poiss = np.mean(HDs)/(2*simulation_settings['mut_rate']*simulation_settings['seq_len'])
-            exp = scats.poisson.pmf(range(max(HDs)+1),np.mean(HDs))*len(HDs)
-            obs = np.histogram(HDs, bins=range(0,max(HDs)+2))[0]
+            exp = scats.poisson.pmf(list(range(max(HDs)+1)),np.mean(HDs))*len(HDs)
+            obs = np.histogram(HDs, bins=list(range(0,max(HDs)+2)))[0]
             pval =scats.chisquare(obs,exp,ddof=len(exp)-1-len(sample)).pvalue
             if np.isnan(pval) or pval>0.05:
                 return poiss

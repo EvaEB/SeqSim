@@ -1,4 +1,4 @@
-from __future__ import print_function
+
 import SeqSimEvo
 #from SeqSimEvo import binary_fission as SeqSimEvo
 
@@ -284,12 +284,12 @@ def test_Population_hamming_distance_correct():
                                             5:[[4,2],[3,1],[6,1]]},
                                     changed=[1,2,3,4,5])
     #action = mean
-    assert abs(pop.Hamming_distance(range(10)) - 1.6) < 0.05, 'mean hamming distance wrong'
+    assert abs(pop.Hamming_distance(list(range(10))) - 1.6) < 0.05, 'mean hamming distance wrong'
     #action = poisson_fit
-    assert pop.Hamming_distance(range(10),action = 'Poisson_fit') is np.nan
+    assert pop.Hamming_distance(list(range(10)),action = 'Poisson_fit') is np.nan
 
     pop = SeqSimEvo.Population(sim)
-    assert pop.Hamming_distance(range(10),action = 'Poisson_fit') == 0
+    assert pop.Hamming_distance(list(range(10)),action = 'Poisson_fit') == 0
 
 #                           .Simulation.__init__
 #                                      .__str__
@@ -320,7 +320,7 @@ def test_Simulation_init_Correct():
     assert len(sim.sequence) == 10
 
     assert sim.settings['basedist'] == [0,0.5,0.8,1]
-    assert 'sequence' not in sim.settings.keys()
+    assert 'sequence' not in list(sim.settings.keys())
 
     assert sim.sequence.sequence.count(0) == 0
     assert sim.gen == 0

@@ -10,7 +10,7 @@ All other functionalities (calculation of fitness, mutating sequences, etc.) are
 as in the original simulation code
 
 '''
-from __future__ import print_function
+
 from . import simulation as sim
 from .simulation import Population, Seq
 import random
@@ -64,6 +64,6 @@ if __name__ == '__main__':
     from tqdm import tqdm
 
     sim_test = Simulation(R0 = 2,max_pop=10000,n_seq_init=1000)
-    for i in tqdm(range(50)):
+    for i in tqdm(list(range(50))):
         sim_test.new_generation()
     print(sim_test.current_gen)

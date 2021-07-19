@@ -4,7 +4,7 @@ simple_sim.py: a SeqSimEvo scenario
 preforms a simple simulation of sequence evolution
 '''
 
-from __future__ import print_function
+
 import argparse
 
 import SeqSimEvo.simulation as seq_sim

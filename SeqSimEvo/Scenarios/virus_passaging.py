@@ -5,7 +5,7 @@ recreates a virus passaging experiment, where virus is allowed to multiply on a
 host for a certain number of generations, after which a proportion is transferred
 to new hosts.
 """
-from __future__ import print_function
+
 import os
 import sys
 from copy import deepcopy as copy
@@ -26,7 +26,7 @@ class passaging():
         self.sims = []
         self.n_pop = len(self.settings['pop_size'])
 
-        names = iter(range(self.n_pop))
+        names = iter(list(range(self.n_pop)))
         for i in range(self.n_pop):
             self.sims.append(main_sim.copy(next(names),n_seq=self.settings['pop_size'][i]))
             try:
@@ -53,7 +53,7 @@ class passaging():
 
         #passage: change population size, handle migration
         previous = []
-        for pop,i in zip(self.sims, range(self.n_pop)):
+        for pop,i in zip(self.sims, list(range(self.n_pop))):
             #keep previous generation for migration
             if self.settings['migration'] is not None:
                 previous.append(pop.current_gen)
@@ -82,12 +82,12 @@ class passaging():
                     if to != fro:
                         n_migrate = int(self.settings['migration'][to][fro]*previous[fro].n_seq) #number of sequences that migrate
                         sample = previous[fro].get_sample(n_migrate) #sampled sequences
-                        for seq,i in zip(sample,range(n_migrate)):
+                        for seq,i in zip(sample,list(range(n_migrate))):
                             changed = previous[fro].get_seq(seq) #get the changes is this sequence
                             self.sims[to].current_gen.add_sequence(changed)
 
     def all_passages(self):
-        for passage in tqdm(range(self.settings['n_transfer'])):
+        for passage in tqdm(list(range(self.settings['n_transfer']))):
             self.next_passage()
 
 

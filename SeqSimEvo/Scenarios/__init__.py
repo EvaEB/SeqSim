@@ -1,4 +1,4 @@
-import multiple_compartments
-import recreate_dataset
-import simple_sim
-import virus_passaging
+from . import multiple_compartments
+from . import recreate_dataset
+from . import simple_sim
+from . import virus_passaging

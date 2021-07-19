@@ -16,7 +16,7 @@ with open(path.join(here, 'readme.md'), encoding='utf-8') as f:
 
 setup(
     name='SeqSimEvo',
-    version='0.1',
+    version='0.2',
     description='Simulation of sequence evolution with selection',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -28,7 +28,7 @@ setup(
 
     packages=find_packages('.',exclude=['contrib', 'docs', 'Tests']),
 
-    python_requires='>=2.7',
+    python_requires='>=3.9',
     install_requires=['matplotlib','appJar','pyyaml','numpy','tqdm','scipy'],
 
     package_data={

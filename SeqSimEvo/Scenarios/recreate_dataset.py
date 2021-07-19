@@ -5,7 +5,7 @@ Recreate a dataset of sequence samples from different patients. The amount of
 unique mutations per sequence sample is matched as closely as possible. A version
 of this code was used for https://doi.org/10.1093/ve/vey029
 """
-from __future__ import print_function
+
 from collections import Counter
 import numpy as np
 import pickle
@@ -31,7 +31,7 @@ class stats(object):
                 self.mutation_counts[mut] = [self.n_patients]
 
     def get_stats(self,sim):
-        values = self.mutation_counts.values()
+        values = list(self.mutation_counts.values())
         shared_index_temp = np.array([[patient, len(mutlist)] for mutlist in values for patient in mutlist])
         shared_index = [np.mean(shared_index_temp[shared_index_temp[:,0]==i+1,1]-1) for i in range(self.n_patients)]
 
@@ -39,7 +39,7 @@ class stats(object):
 
         fitnesses = {}
         shared_fitness = []
-        for mut_id in self.mutation_counts.keys():
+        for mut_id in list(self.mutation_counts.keys()):
             mut = mut_id.strip('[]').split()
             shared_fitness.append([len(self.mutation_counts[mut_id]),
                                    sim.get_fitness_effect(int(mut[0]),int(mut[1]))])

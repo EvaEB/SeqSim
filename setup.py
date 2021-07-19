@@ -28,7 +28,7 @@ setup(
 
     packages=find_packages('.',exclude=['contrib', 'docs', 'Tests']),
 
-    python_requires='>=3.9',
+    python_requires='>=3.7',
     install_requires=['matplotlib','appJar','pyyaml','numpy','tqdm','scipy'],
 
     package_data={

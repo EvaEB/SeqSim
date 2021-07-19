@@ -229,7 +229,7 @@ def main():
 
     # run scenario
     if args.output:
-        with open(args.output) as fd:
+        with open(args.output, "w") as fd:
             fd.write(run(settings, args.organism))
     else:
         print(run(settings, args.organism))

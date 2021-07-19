@@ -21,8 +21,6 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
 
-    url='',  # TODO: add
-
     author='Eva Bons',
     author_email='eva.bons@gmail.com',
 
@@ -40,7 +38,8 @@ setup(
             'SeqSimEvo_gui=SeqSimEvo.GUI:gui_run',
             'SeqSimEvo_multipleCompartments=SeqSimEvo.Scenarios:multiple_compartments.main',
             'SeqSimEvo_recreateDataset=SeqSimEvo.Scenarios:recreate_dataset.main',
-            'SeqSimEvo_simpleSim=SeqSimEvo.Scenarios:simple_sim.main'
+            'SeqSimEvo_simpleSim=SeqSimEvo.Scenarios:simple_sim.main',
+            'SeqSimEvo_passageSim=SeqSimEvo.Scenarios:virus_passaging.main',
         ],
     },
 

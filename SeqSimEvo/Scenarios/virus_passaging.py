@@ -114,7 +114,7 @@ def run(scenario_settings, organism_settings):
     return fasta
 
 
-if __name__ == "__main__":
+def main():
     import argparse
     import numpy as np
     import ast
@@ -233,3 +233,7 @@ if __name__ == "__main__":
             fd.write(run(settings, args.organism))
     else:
         print(run(settings, args.organism))
+
+if __name__ == "__main__":
+    main()
+

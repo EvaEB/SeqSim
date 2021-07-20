@@ -37,7 +37,7 @@ class passaging:
                 self.sims[i].settings["max_pop"] = self.settings["max_pop"][i]
             except IndexError:
                 self.sims[i].settings["max_pop"] = self.settings["max_pop"]
-        self.output = main_sim.current_gen.to_fasta(n_seq=1, description="consensus")
+        # self.output = main_sim.current_gen.to_fasta(n_seq=1, description="consensus")
         self.cur_passage = 0
 
     def next_passage(self):
@@ -66,7 +66,7 @@ class passaging:
             # sample
             self.output += pop.current_gen.to_fasta(
                 n_seq=self.settings["sampling"][i],
-                description=" - pop {} - transfer {} ".format(i, self.cur_passage),
+                description="-pop{}-gen{} ".format(i, self.cur_passage),
             )
 
             # change parameters for transfer
@@ -234,6 +234,6 @@ def main():
     else:
         print(run(settings, args.organism))
 
+
 if __name__ == "__main__":
     main()
-

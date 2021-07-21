@@ -38,6 +38,7 @@ class passaging:
             except IndexError:
                 self.sims[i].settings["max_pop"] = self.settings["max_pop"]
         # self.output = main_sim.current_gen.to_fasta(n_seq=1, description="consensus")
+        self.output = ""
         self.cur_passage = 0
 
     def next_passage(self):

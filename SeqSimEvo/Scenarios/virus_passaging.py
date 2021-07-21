@@ -229,11 +229,12 @@ def main():
     settings["events"] = events
 
     # run scenario
+    out = run(settings, args.organism)
     if args.output:
         with open(args.output, "w") as fd:
-            fd.write(run(settings, args.organism))
+            fd.write(out)
     else:
-        print(run(settings, args.organism))
+        print(out)
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ from copy import deepcopy
 
 import SeqSimEvo
 
-# tests written for SeqSimEvo.Seq.__init__
+# tests written for SeqSimEvo.Sequence.__init__
 #                               .__str__
 #                               .__getitem__
 #                               .translate_sequence
@@ -14,14 +14,14 @@ import SeqSimEvo
 
 # __init__
 def test_seq_init_sequence_correct_length():
-    sequence = SeqSimEvo.Seq.generate_sequence(100)
+    sequence = SeqSimEvo.Sequence.generate_sequence(100)
 
     assert len(sequence.sequence) == len(sequence)
 
 
 def test_seq_init_creation():
     """test for presence of the necessary variables"""
-    sequence = SeqSimEvo.Seq.generate_sequence(100)
+    sequence = SeqSimEvo.Sequence.generate_sequence(100)
 
     sequence.translation
     sequence.sequence
@@ -30,14 +30,14 @@ def test_seq_init_creation():
 def test_seq_str():
     """Test string generation."""
     sequence = "ATGCTGC"
-    assert str(SeqSimEvo.Seq(seq=sequence)) == sequence
+    assert str(SeqSimEvo.Sequence(seq=sequence)) == sequence
 
 
 # __getitem__
 def test_seq_getitem_correct():
     """Test indexing."""
     original_sequence = "ATGC"
-    sequence = SeqSimEvo.Seq(seq=original_sequence)
+    sequence = SeqSimEvo.Sequence(seq=original_sequence)
     assert sequence[0] == "A", f"returned {sequence[0]} when 'A' was expected"
     assert sequence[1] == "T", f"returned {sequence[1]} when 'T' was expected"
     assert sequence[2] == "G", f"returned {sequence[2]} when 'G' was expected"
@@ -46,7 +46,7 @@ def test_seq_getitem_correct():
 
 def test_seq_getitem_fails():
     """Test indexing out of bounds."""
-    sequence = SeqSimEvo.Seq.generate_sequence(100)
+    sequence = SeqSimEvo.Sequence.generate_sequence(100)
     with pytest.raises(Exception):
         _ = sequence[len(sequence) + 1]
 
@@ -56,7 +56,9 @@ def test_seq_translate_sequence_correct():
     """Test sequence translation to encoding."""
     original_sequence = "ATCGTTCG"
     expected_translation = [0, 2, 3, 1, 2, 2, 3, 1]
-    result = SeqSimEvo.Seq.generate_sequence(100).translate_sequence(original_sequence)
+    result = SeqSimEvo.Sequence.generate_sequence(100).translate_sequence(
+        original_sequence
+    )
     assert list(result) == expected_translation, "{} != {}".format(
         result, expected_translation
     )
@@ -66,12 +68,12 @@ def test_seq_translate_sequence_correct():
 def test_seq_generate_seq_correct():
     """Test generating random sequence."""
     seq_len = 123
-    seq1 = SeqSimEvo.Seq.generate_sequence(seq_len)
+    seq1 = SeqSimEvo.Sequence.generate_sequence(seq_len)
     assert (
         len(seq1.sequence) == seq_len
     ), f"sequence length should be 123, is {len(seq1)=}"
 
-    seq2 = SeqSimEvo.Seq.generate_sequence(5, base_dist=[1, 1, 1, 1])
+    seq2 = SeqSimEvo.Sequence.generate_sequence(5, base_dist=[1, 1, 1, 1])
     assert seq2.sequence == [0, 0, 0, 0, 0]
 
 
@@ -79,14 +81,14 @@ def test_seq_generate_seq_fails_neg_length():
     """Test negative input for sequence generation."""
     seq_len = -123
     with pytest.raises(Exception):
-        SeqSimEvo.Seq.generate_sequence(seq_len)
+        SeqSimEvo.Sequence.generate_sequence(seq_len)
 
 
 def test_seq_generate_seq_fails_non_int_length():
     """Test non integer input for sequence generation."""
     seq_len = 5.5
     with pytest.raises(Exception):
-        SeqSimEvo.Seq.generate_sequence(seq_len)
+        SeqSimEvo.Sequence.generate_sequence(seq_len)
 
 
 # tests written for SeqSimEvo.Population.__init__
@@ -108,18 +110,18 @@ def test_seq_generate_seq_fails_non_int_length():
 
 # __init__
 def test_Population_init_CORRECT():
-    sim = SeqSimEvo.Simulation()
-    pop = SeqSimEvo.Population(sim)
-    pop.changed
-    pop.changes
-    pop.sim
-    pop.n_seq
+    seq = SeqSimEvo.Sequence.generate_sequence(100)
+    pop = SeqSimEvo.Population(seq, 10)
+    assert hasattr(pop, "changed")
+    assert hasattr(pop, "changes")
+    assert hasattr(pop, "sequence")
+    assert hasattr(pop, "n_seq")
 
 
 # __len__
 def test_Population_len_CORRECT():
-    sim = SeqSimEvo.Simulation(n_seq_init=100)
-    pop = SeqSimEvo.Population(sim)
+    seq = SeqSimEvo.Sequence.generate_sequence(100)
+    pop = SeqSimEvo.Population(seq, 100)
     assert len(pop) == 100
     assert pop.n_seq == 100
 
@@ -127,25 +129,25 @@ def test_Population_len_CORRECT():
 # __str__
 def test_Population_str_CORRECT():
     # tests that a string gets returned, not the contents
-    sim = SeqSimEvo.Simulation(n_seq_init=100)
-    pop = SeqSimEvo.Population(sim)
-    assert type(str(pop)) == type(""), "str() doesn't return a string, but {}".format(
-        type(str(sim))
-    )
+    seq = SeqSimEvo.Sequence.generate_sequence(100)
+    pop = SeqSimEvo.Population(seq, 10)
+    assert isinstance(
+        str(pop), str
+    ), f"str() doesn't return a string, but {type(str(pop))=}"
 
 
 # add_change
 def test_Population_add_change_CORRECT():
-    sim = SeqSimEvo.Simulation(n_seq_init=100, seq_len=200)
-    pop = SeqSimEvo.Population(sim)
+    seq = SeqSimEvo.Sequence.generate_sequence(100)
+    pop = SeqSimEvo.Population(seq, 100)
     pop.add_change(50, 10, 0)
     assert 50 in pop.changed, "sequence 50 not in changed {}".format(pop.changed)
     assert [10, 0] in pop.get_seq(50), "{}".format(pop.changes[50])
 
 
 def test_Population_add_change_FAILS_outofrange():
-    sim = SeqSimEvo.Simulation(n_seq_init=100, seq_len=100)
-    pop = SeqSimEvo.Population(sim)
+    seq = SeqSimEvo.Sequence.generate_sequence(100)
+    pop = SeqSimEvo.Population(seq, 100)
 
     with pytest.raises(Exception) as e_info:
         pop.add_change(150, 10, 0)
@@ -156,8 +158,8 @@ def test_Population_add_change_FAILS_outofrange():
 
 # add_sequence
 def test_Population_add_sequence_CORRECT():
-    sim = SeqSimEvo.Simulation(n_seq_init=100, seq_len=100)
-    pop = SeqSimEvo.Population(sim)
+    seq = SeqSimEvo.Sequence.generate_sequence(100)
+    pop = SeqSimEvo.Population(seq, 100)
 
     new_change = [[10, 1], [20, 2]]
     new = pop.add_sequence(changes=new_change)
@@ -173,10 +175,9 @@ def test_Population_add_sequence_CORRECT():
 
 # consensus_sequence
 def test_Population_consensus_sequence_CORRECT():
-    seq = SeqSimEvo.Seq(seq="AAAA")
-    sim = SeqSimEvo.Simulation(n_seq_init=1, sequence=seq)
-    pop = SeqSimEvo.Population(sim)
-    for i in range(10):
+    seq = SeqSimEvo.Sequence(seq="AAAA")
+    pop = SeqSimEvo.Population(seq, 10)
+    for _ in range(10):
         pop.add_sequence(changes=[[1, 2]])
     assert (
         str(pop.consensus_sequence()) == "ATAA"
@@ -187,9 +188,8 @@ def test_Population_consensus_sequence_CORRECT():
 
 # copy
 def test_Population_copy_CORRECT():
-    seq = SeqSimEvo.Seq(seq="AAAAAAAAAA")
-    sim = SeqSimEvo.Simulation(n_seq_init=1, sequence=seq)
-    pop = SeqSimEvo.Population(sim)
+    seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
+    pop = SeqSimEvo.Population(seq, 100)
 
     for i in range(10):
         pop.add_sequence(changes=[[i, 2]])
@@ -205,9 +205,8 @@ def test_Population_copy_CORRECT():
 
 # delete_sequence
 def test_Population_delete_sequence_CORRECT():
-    seq = SeqSimEvo.Seq(seq="AAAAAAAAAA")
-    sim = SeqSimEvo.Simulation(n_seq_init=1, sequence=seq)
-    pop = SeqSimEvo.Population(sim)
+    seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
+    pop = SeqSimEvo.Population(seq, 1)
 
     id1 = pop.add_sequence(changes=[[2, 2]])
     id2 = pop.add_sequence(changes=[[3, 3]])
@@ -220,18 +219,16 @@ def test_Population_delete_sequence_CORRECT():
 
 # get_base
 def test_Population_get_base_CORRECT():
-    seq = SeqSimEvo.Seq(seq="AAAAAAAAAA")
-    sim = SeqSimEvo.Simulation(n_seq_init=1, sequence=seq)
-    pop = SeqSimEvo.Population(sim)
+    seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
+    pop = SeqSimEvo.Population(seq, 100)
 
     assert pop.get_base(0, 1) == 0
 
 
 # get_sample
 def test_Population_get_sample_CORRECT():
-    seq = SeqSimEvo.Seq(seq="AAAAAAAAAA")
-    sim = SeqSimEvo.Simulation(n_seq_init=100, sequence=seq)
-    pop = SeqSimEvo.Population(sim)
+    seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
+    pop = SeqSimEvo.Population(seq, 100)
 
     sample = pop.get_sample(10)
     assert len(sample) == 10, "sample returns wrong length"
@@ -244,9 +241,8 @@ def test_Population_get_sample_CORRECT():
 
 # get_seq
 def test_Population_get_seq_CORRECT():
-    seq = SeqSimEvo.Seq(seq="AAAAAAAAAA")
-    sim = SeqSimEvo.Simulation(n_seq_init=100, sequence=seq)
-    pop = SeqSimEvo.Population(sim)
+    seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
+    pop = SeqSimEvo.Population(seq, 100)
 
     id = pop.add_sequence(changes=[[5, 2]])
 
@@ -259,9 +255,8 @@ def test_Population_get_seq_CORRECT():
 
 # print_sample
 def test_Population_print_sample_correct(capfd):
-    seq = SeqSimEvo.Seq(seq="AAAAAAAAAA")
-    sim = SeqSimEvo.Simulation(n_seq_init=100, sequence=seq)
-    pop = SeqSimEvo.Population(sim, changes={1: [[5, 2], [3, 1]]}, changed=[1])
+    seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
+    pop = SeqSimEvo.Population(seq, 100, changes={1: [[5, 2], [3, 1]]}, changed=[1])
 
     pop.print_sample([1])
     out, err = capfd.readouterr()
@@ -278,9 +273,8 @@ def test_Population_print_sample_correct(capfd):
 
 # sample_to_string
 def test_Population_sample_to_string_correct():
-    seq = SeqSimEvo.Seq(seq="AAAAAAAAAA")
-    sim = SeqSimEvo.Simulation(n_seq_init=100, sequence=seq)
-    pop = SeqSimEvo.Population(sim, changes={1: [[5, 2], [3, 1]]}, changed=[1])
+    seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
+    pop = SeqSimEvo.Population(seq, 100, changes={1: [[5, 2], [3, 1]]}, changed=[1])
 
     string = pop.sample_to_string([1])
     assert ("A-5-T\t1" in string) and (
@@ -292,9 +286,8 @@ def test_Population_sample_to_string_correct():
 
 # stats
 def test_Population_stats_correct():
-    seq = SeqSimEvo.Seq(seq="AAAAAAAAAA")
-    sim = SeqSimEvo.Simulation(n_seq_init=100, sequence=seq)
-    pop = SeqSimEvo.Population(sim, changes={1: [[5, 2], [3, 1]]}, changed=[1])
+    seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
+    pop = SeqSimEvo.Population(seq, 100, changes={1: [[5, 2], [3, 1]]}, changed=[1])
     for i in range(60):
         pop.add_change(i, 6, 3)
     pop.add_sequence(changes=[[5, 2], [1, 1]])
@@ -314,9 +307,8 @@ def test_Population_stats_correct():
 
 # to_fasta
 def test_Population_to_fasta_correct():
-    seq = SeqSimEvo.Seq(seq="AAAAAAAAAA")
-    sim = SeqSimEvo.Simulation(n_seq_init=3, sequence=seq)
-    pop = SeqSimEvo.Population(sim, changes={1: [[5, 2], [3, 1]]}, changed=[1])
+    seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
+    pop = SeqSimEvo.Population(seq, 3, changes={1: [[5, 2], [3, 1]]}, changed=[1])
 
     fasta = ">0\nAAAAAAAAAA\n>1\nAAAGATAAAA\n>2\nAAAAAAAAAA\n"
     assert pop.to_fasta([0, 1, 2]) == fasta, "fasta incorrect"
@@ -324,7 +316,7 @@ def test_Population_to_fasta_correct():
 
 # Hamming_distance
 # def test_Population_hamming_distance_correct():
-#     seq = SeqSimEvo.Seq(seq="AAAAAAAAAA")
+#     seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
 #     sim = SeqSimEvo.Simulation(n_seq_init=10, sequence=seq)
 #     pop = SeqSimEvo.Population(
 #         sim,
@@ -358,6 +350,7 @@ def test_Population_to_fasta_correct():
 #                                      .new_mutations_per_seq
 
 # __init__
+"""
 def test_Simulation_init_Correct():
     sim = SeqSimEvo.Simulation(
         model="lognormal",
@@ -394,7 +387,7 @@ def test_Simulation_init_Correct():
 
 
 def test_Simulation_get_fitness_effect():
-    seq = SeqSimEvo.Seq(seq="AAAAAAAAAA")
+    seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
     sim = SeqSimEvo.Simulation(n_seq_init=3, sequence=seq)
 
     assert sim.get_fitness_effect(0, 0) == 1
@@ -408,7 +401,7 @@ def test_Simulation_get_fitness_effect():
 
 # copy
 def test_Simulation_copy():
-    seq = SeqSimEvo.Seq(seq="AAAAAAAAAA")
+    seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
     sim = SeqSimEvo.Simulation(n_seq_init=3, sequence=seq)
 
     sim_copy = sim.copy("sim_test_copy")
@@ -420,7 +413,7 @@ def test_Simulation_copy():
 
 # get_nr_offspring
 def test_Simulation_get_nr_offspring():
-    seq = SeqSimEvo.Seq(seq="AAAAAAAAAA")
+    seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
     sim = SeqSimEvo.Simulation(n_seq_init=3, sequence=seq)
     offspring = sim.get_nr_offspring(0)
     assert offspring >= 0
@@ -431,7 +424,7 @@ def test_Simulation_get_nr_offspring():
 
 # mutate_seq
 def test_Simulation_mutate_seq():
-    seq = SeqSimEvo.Seq(seq="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+    seq = SeqSimEvo.Sequence(seq="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
     sim = SeqSimEvo.Simulation(n_seq_init=3, sequence=seq)
     next_gen = SeqSimEvo.Population(simulation=sim)
 
@@ -442,7 +435,7 @@ def test_Simulation_mutate_seq():
 
 
 def test_Simulation_new_generation():
-    seq = SeqSimEvo.Seq.generate_sequence(seq_len=5000)
+    seq = SeqSimEvo.Sequence.generate_sequence(seq_len=5000)
     sim = SeqSimEvo.Simulation(n_seq_init=10000, sequence=seq, mut_rate=0.001)
     sim.effective_pop = -1
     sim.average_fitness = -1
@@ -458,3 +451,4 @@ def test_Simulation_new_generation():
     assert sim.effective_pop != -1
     assert sim.average_fitness != -1
     assert sim.n_seq != -1
+"""

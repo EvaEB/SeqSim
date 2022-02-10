@@ -5,108 +5,57 @@ Created on Thu Dec 15 13:42:33 2016
 """
 
 import random
-from collections import Counter
+from dataclasses import dataclass
 from copy import deepcopy
 
 import numpy as np
-import pkg_resources
+from numpy.typing import ArrayLike
 
-import scipy.stats as scats
-import yaml
+from .sequence import Sequence
+from .population import Population
 
 
-class Seq(object):
-    """Sequence core class.
+@dataclass
+class SimulationSettings:
+    """Simulation settings."""
+
+    model: str
+    parameters: dict
+    offspring_distribution: str
+
+    mutation_rate: float
+    subs_matrix: ArrayLike
+
+    seq_len: int
+    base_dist: list
+
+    n_seq_init: bool
+    basic_reproductive_number: float
+    ga_increase: bool
+    max_pop: int
+    name: str
+
+    offspring_sigma: float = 0
+
+
+class Simulation:
+    """Sequence simulation object
 
     Attributes
     ----------
-    translation : str
-        Order of translation from bases (A, T, G, C) to numbers
-    sequence : list
-        A string representation of the sequence
-    """
-
-    def __init__(self, seq: list, **kwargs):
-        """Create a sequence object.
-
-        Parameters
-        ----------
-        seq : list
-            Sequence
-        """
-        self.translation = "AGTC"
-
-        if isinstance(seq, str):
-            seq = self.translate_sequence(seq)
-
-        self.sequence = seq
-
-    @classmethod
-    def generate_sequence(cls, seq_len: int, base_dist: list = None):
-        """Generate random sequence.
-
-        Parameters
-        ----------
-        seq_len : int
-            Length of sequence.
-        base_dist : list
-            Base distribution as list in order A, G, T, C. Default: None
-        """
-        if seq_len < 0:
-            raise TypeError("seq_len must be positive integer")
-        seq = []
-        if base_dist is None:
-            base_dist = np.array([0.25, 0.5, 0.75, 1])
-        else:
-            base_dist = np.array(base_dist)
-        for _ in range(seq_len):
-            seq.append(4 - sum(base_dist > random.random()))
-        return cls(seq)
-
-    def translate_sequence(self, seq: list):
-        """Translate a sequences from bases to numbers.
-
-        Parameters
-        ----------
-        seq : str
-            String representation of a sequence.
-
-        Returns
-        -------
-        list
-            Representation of the sequence.
-        """
-        return [self.translation.index(symbol) for symbol in seq]
-
-    def __str__(self):
-        return "".join([self.translation[idx] for idx in self.sequence])
-
-    def __len__(self):
-        return len(self.sequence)
-
-    def __getitem__(self, key):
-        return self.translation[self.sequence[key]]
-
-
-class Simulation(object):
-    """
-    Sequence simulation object
-
-    **Attributes**:
-    * `settings` (Dict): all simulation settings
-    * `mut_rate` (float): mutation rate for the simulation (adapted for potential
-    increase in G-A rate)
-    * `sequence` (Seq): ancestor sequence the simulation starts with
-    * `fitness_table` (4xseq_len list): table containing fitness values of all
-    possble bases in the sequence
-    * `gen` (int): the current generation
-    * `average_fitness` (float): average fitness of the population
-    * `effective_pop` (int): effective population size of current generation
-    (number of unique sequences)
-    * `n_seq` (int) total number of sequenes in the current generation
-    * `current_gen` (Population): the current generation
-    * `mutations_per_seq` (list): number of mutations in the next 1000 mutation
-    events. implemented for efficiency.
+    sequence : Seq
+    settings : SimulationSettings
+        Simulation settings.
+    fitness_table : ArrayLike
+        Table with fitness values for all possible bases in the sequence.
+    generation : int
+        Current generation.
+    average_fitness : int
+        Average fitness of the population.
+    effective_population : int
+        Effective population size of the current population
+    n_seq : int
+        Total number of sequences in the current population
 
     **Arguments**:
     * `simulation_settings` (str): either one of the default simulation
@@ -137,7 +86,13 @@ class Simulation(object):
 
     """
 
-    def __init__(self, simulation_settings="HIV", **kwargs):
+    def __init__(
+        self,
+        sequence: Sequence,
+        simulation_settings: SimulationSettings,
+        fitness_table: ArrayLike = None,
+        **kwargs,
+    ):
         """
         create a Simulation object.
 
@@ -150,7 +105,7 @@ class Simulation(object):
             provided as keyword arguments
 
         Keyword Arguments:
-            model (str): model to use for the MFED (otions: 'neutral'(default),
+            model (str): model to use for the MFED (options: 'neutral'(default),
                 'lognormal','exponential','spikes','beta', 'from_data','steps',
                 'lognormal_ben_only')
             parameters (dict): parameters for the MFED
@@ -159,7 +114,7 @@ class Simulation(object):
                 rows = from, columns = to
             seq_len (int): length of sequence to simulate (default 2600).
                 used only if no sequence is provided
-            basedist (4x1 list): list of cumulutive distribution of bases used
+            basedist (4x1 list): list of cumulative distribution of bases used
                 for generating the sequence in order [A,G,T,C]. default: [0.25,0.5,0.75,1]
             R0 (float): initial average amount of offspring per sequence
             ga_increase (float): Increase in G-A mutation rate (defaul: 1 (no increase))
@@ -169,172 +124,109 @@ class Simulation(object):
             fitness_table (4xseq_len): fitness table to use for the simulation
             n_seq_init (int): initial number of sequences (default 1)
         """
+        self.settings = simulation_settings
+        self.sequence = sequence
+        self.fitness_table = fitness_table
 
-        if type(simulation_settings) is list:
-            simulation_settings = simulation_settings[0]
-        try:
-            with open(simulation_settings) as f:
-                self.settings = yaml.safe_load(f)
-        except IOError:
-            path = pkg_resources.resource_filename("SeqSimEvo", "simulation_settings/")
-            with open(path + simulation_settings) as f:
-                self.settings = yaml.safe_load(f)
-        except TypeError:
-            self.settings = simulation_settings
-
-        for key, value in list(kwargs.items()):
-            self.settings[key] = value
-
-        self.settings["subs_matrix"] = np.array(self.settings["subs_matrix"])
-
-        # adapt mutation rate for APOBEC increase in G-to-A mutations
-        self.mut_rate = sum(
-            [
-                (self.settings["subs_matrix"][1][1] * self.settings["mut_rate"]),
-                (
-                    (1 - self.settings["subs_matrix"][1][1])
-                    * self.settings["ga_increase"]
-                    * self.settings["mut_rate"]
-                ),
-            ]
-        )
-
-        if "sequence" not in list(self.settings.keys()):
-            self.sequence = Seq.generate_sequence(
-                self.settings["seq_len"], self.settings["basedist"]
-            )
-        else:
-            self.sequence = self.settings["sequence"]
-            self.settings["seq_len"] = len(self.sequence)
-
-        if "fitness_table" not in list(self.settings.keys()):
-            if self.settings["model"] == "exponential":
-                for par in ["fl", "fd", "fb"]:
-                    if par not in list(self.settings["parameters"].keys()):
-                        self.settings["parameters"][par] = 0
-                if "fn" not in list(self.settings["parameters"].keys()):
-                    self.settings["parameters"]["fn"] = 1 - (
-                        self.settings["parameters"]["fl"]
-                        + self.settings["parameters"]["fd"]
-                        + self.settings["parameters"]["fb"]
-                    )
-            self.fitness_table = self.getfitness_table()
-        else:
-            self.fitness_table = self.settings["fitness_table"]
-
-        self.settings["max_pop"] = int(self.settings["max_pop"])
+        if self.fitness_table is None:
+            self.fitness_table = self.get_fitness_table
 
         self.gen = 0
         self.average_fitness = 1
-        self.effective_pop = 1
-        self.n_seq = self.settings["n_seq_init"]
+        self.n_seq = self.settings.n_seq_init
 
-        if "pop" not in list(self.settings.keys()):
-            self.current_gen = Population(self, n_seq=int(self.settings["n_seq_init"]))
-        else:
-            self.current_gen = pop
-        # self.current_gen = np.array([[0,np.nan,np.nan,0],
-        #                            [1,150,3,0],
-        #                            [1,1001,0,0],
-        #                            [2,20,2,0]])
-
-        self.mutations_per_seq = self.new_mutations_per_seq()
-
-    def new_mutations_per_seq(self):
-        """select the number of mutations that will happen for the next 1000
-        mutated sequences. implemented for increased efficiency"""
-        return iter(
-            np.random.binomial(len(self.sequence), self.settings["mut_rate"], 1000)
+        self.current_population = Population(
+            self.sequence, self, n_seq=int(self.settings.n_seq_init)
         )
 
-    def __str__(self):
-        string = "sequence simulation\n"
-        string += "MED model\t" + self.settings["model"] + "\n"
-        for i in self.settings["parameters"]:
-            string += str(i) + "\t" + str(self.settings["parameters"][i]) + "\n"
-        string += "ancestor\t" + str(self.sequence) + "\n"
-        string += "number of generations\t" + str(self.gen) + "\n"
-        stats = self.current_gen.stats()
-        for i in list(stats.keys()):
-            string += i.replace("_", " ") + "\t" + str(stats[i]) + "\n"
-        return string
+        self._future_mutation_counts = None
 
-    def getfitness_table(self):
-        """creates a table with random fitness values according to model and
-        parameters par in settings"""
+    @property
+    def effective_population(self):
+        """Effective population size."""
+        return len(self.current_population)
+
+    def _fitness_from_exponential(self):
+        pass
+
+    def get_fitness_table(self):
+        """Creates a table with random fitness.
+
+        Initiate an array with random fitness values according to the model and
+        parameters set in settings.
+        """
         seq_len = len(self.sequence)
         # create an array filled with 0 (all lethal)
         fitness = np.zeros((4, seq_len))
         # make sure the fitness benefit of the initial sequence is 1
-        for (i, base) in zip(list(range(seq_len)), self.sequence.sequence):
-            fitness[base, i] = 1
+        for (idx, base) in enumerate(self.sequence.sequence):
+            fitness[base, idx] = 1
         to_fill = np.where(fitness == 0)
 
-        if self.settings["model"] == "neutral":  # neutral model
+        if self.settings.model == "neutral":  # neutral model
             fitness = np.ones((4, seq_len))
-        elif self.settings["model"] == "exponential":  # lethals+beneficials+deleterious
+        elif self.settings.model == "exponential":  # lethals+beneficial+deleterious
             for i, j in zip(to_fill[0], to_fill[1]):
-                randnr = random.random()
-                if randnr < self.settings["parameters"]["fl"]:
+                random_number = random.random()
+                if random_number < self.settings.parameters["fl"]:
                     fitness[i, j] = 0
                 elif (
-                    randnr
-                    < self.settings["parameters"]["fl"]
-                    + self.settings["parameters"]["fn"]
+                    random_number
+                    < self.settings.parameters["fl"] + self.settings.parameters["fn"]
                 ):
                     fitness[i, j] = 1
                 elif (
-                    randnr
-                    < self.settings["parameters"]["fl"]
-                    + self.settings["parameters"]["fn"]
-                    + self.settings["parameters"]["fb"]
+                    random_number
+                    < self.settings.parameters["fl"]
+                    + self.settings.parameters["fn"]
+                    + self.settings.parameters["fb"]
                 ):
                     fitness[i, j] = 1 + np.random.exponential(
-                        self.settings["parameters"]["lb"]
+                        self.settings.parameters["lb"]
                     )
                 else:
                     fitness[i, j] = 1 - np.random.exponential(
-                        self.settings["parameters"]["ld"]
+                        self.settings.parameters["ld"]
                     )
                 if fitness[i, j] < 0:
                     fitness[i, j] = 0
 
-        elif self.settings["model"] == "spikes":
-            n_spikes = len(self.settings["parameters"]["loc"])
+        elif self.settings.model == "spikes":
+            n_spikes = len(self.settings.parameters["loc"])
 
             for i, j in zip(to_fill[0], to_fill[1]):
-                randnr = random.random()
+                random_number = random.random()
                 prob = 0
                 for spike in range(n_spikes):
-                    prob += self.settings["parameters"]["freq"][spike]
-                    if randnr < prob:
-                        fitness[i, j] = self.settings["parameters"]["loc"][spike]
+                    prob += self.settings.parameters["freq"][spike]
+                    if random_number < prob:
+                        fitness[i, j] = self.settings.parameters["loc"][spike]
                         break
-        elif self.settings["model"] in ["lognormal", "lognormal_ben_only"]:
+        elif self.settings.model in ["lognormal", "lognormal_ben_only"]:
             for i, j in zip(to_fill[0], to_fill[1]):
-                randnr = random.random()
-                if randnr > self.settings["parameters"]["fl"]:
+                random_number = random.random()
+                if random_number > self.settings.parameters["fl"]:
                     fitness[i, j] = np.random.lognormal(
-                        self.settings["parameters"]["mu"],
-                        self.settings["parameters"]["sigma"],
+                        self.settings.parameters["mu"],
+                        self.settings.parameters["sigma"],
                     )
-            if self.settings["model"] == "lognormal_ben_only":
+            if self.settings.model == "lognormal_ben_only":
                 fitness[fitness < 1] = 1
-        elif self.settings["model"] == "beta":
-            randnr = random.random()
-            if randnr > self.settings["parameters"]["fl"]:
+        elif self.settings.model == "beta":
+            random_number = random.random()
+            if random_number > self.settings.parameters["fl"]:
                 fitness[i, j] = np.random.lognormal(
-                    self.settings["parameters"]["a"], self.settings["parameters"]["b"]
+                    self.settings.parameters["a"], self.settings.parameters["b"]
                 )
-        elif self.settings["model"] == "from_data":
+        elif self.settings.model == "from_data":
             for i, j in zip(to_fill[0], to_fill[1]):
-                index = np.random.randint(len(self.settings["parameters"]["values"]))
-                if self.settings["parameters"]["SD"][index] == 0:
-                    new_number = self.settings["parameters"]["values"][index]
+                index = np.random.randint(len(self.settings.parameters["values"]))
+                if self.settings.parameters["SD"][index] == 0:
+                    new_number = self.settings.parameters["values"][index]
                 else:
                     new_number = np.random.normal(
-                        self.settings["parameters"]["values"][index],
-                        self.settings["parameters"]["SD"][index],
+                        self.settings.parameters["values"][index],
+                        self.settings.parameters["SD"][index],
                     )
                 if new_number >= 0:
                     fitness[i, j] = new_number
@@ -344,34 +236,22 @@ class Simulation(object):
         return fitness
 
     def get_fitness_effect(self, location, target_base):
-        """
-        get the fitness effect of a mutation at location to target_base
+        """Get the fitness effect of a mutation at location to target_base
 
-        **Arguments**:
-        * `location` (int): the position in the genome (0-based counting)
-        * `target_base` (int): the base of which to get the fitness effect
+        Parameters
+        ----------
+        location : int
+        target_base : int
 
-        **Returns**:
-            the fitness effect at this position (float)
+        Returns
+        -------
+        Fitness effect at this position
         """
         return self.fitness_table[target_base, location]
 
-    def get_nr_offspring(self, sequence_id, return_fitness=False):
-        """
-        get the number of offspring of a sequence according to the fitness
-        of that sequence
-
-        **Arguments**:
-        * `sequence_id` (int): the id of the sequence to get offspring of
-        * `return_fitness` (Bool): return fitness as well
-
-        **Returns**:
-        the calculated number of offspring (int) (if return_fitness is False)
-        tuple (int,float): calculated number of offsprint and the fitness of
-        the sequence (if return_fitness is True)
-        """
-        R0 = self.settings["R0"]
-        changes = self.current_gen.get_seq(sequence_id)
+    def get_sequence_fitness(self, sequence_id):
+        """Get fitness for sequence."""
+        changes = self.current_population.get_seq(sequence_id)
         fitness = 1
 
         # calculate the fitness of the sequence
@@ -379,56 +259,70 @@ class Simulation(object):
             for pos, base in zip(changes[:, 0], changes[:, 1]):
                 fitness *= self.fitness_table[int(base), int(pos)]
 
-        if self.settings["offspring_distribution"] == "poisson":
-            offspring = np.random.poisson(fitness * R0)
-        elif self.settings["offspring_distribution"] == "normal":
+        return fitness
+
+    def get_offspring_count(self, fitness):
+        """Get number of offsprint of a sequence.
+
+        Get the number of offspring depending on the fitness of that sequence.
+
+        Parameters
+        ----------
+        fitness : float
+
+        Returns
+        -------
+        Tuple with the number of offspring and the fitness of the sequence.
+        The number of offspring that the sequence produces during one generation.
+        """
+        basic_reproductive_number = self.settings.basic_reproductive_number
+
+        if self.settings.offspring_distribution == "poisson":
+            offspring = np.random.poisson(fitness * basic_reproductive_number)
+        elif self.settings.offspring_distribution == "normal":
             offspring = int(
                 round(
                     np.random.normal(
-                        loc=fitness * R0, scale=self.settings["offspring_sigma"]
+                        loc=fitness * basic_reproductive_number,
+                        scale=self.settings.offspring_sigma,
                     )
                 )
             )
         else:
             raise ValueError(
-                "offspring distribution {} not understood".format(
-                    self.settings["offspring_distribution"]
-                )
+                f"Offspring distribution {self.settings.offspring_distribution} unknown."
             )
-        if return_fitness:
-            return offspring, fitness
-        return offspring
+        return offspring, fitness
 
     def mutate_seq(self, pop, seq_id_new, seq_id_old):
-        """
-        mutates a sequence (with existing mutations)
+        """Mutate a sequence.
 
-        **Arguments**:
-        * `pop` (Population): the population which holds the new generation
-        * `seq_id_new` (int): the sequence ID of the new sequence
-        * `seq_id_old` (int): the sequence ID of the old sequence
-        (in the current generation)
+        Arguments
+        ---------
+        pop : Population
+            Population the sequence mutates in
+        seq_id_new : int
+            Sequence ID of the new sequence
+        seq_id_old : int
+            Sequence ID of the sequence in its ancestor population
 
-        **Returns**:
-            True/False (did the sequence mutate or not?)
+        Returns
+        -------
+        Return True if the sequence did mutate and False if it did not.
         """
         # get the number of mutations that will take place
-        try:
-            nr_mut = next(self.mutations_per_seq)
-        except StopIteration:
-            self.mutations_per_seq = self.new_mutations_per_seq()
-            nr_mut = next(self.mutations_per_seq)
+        mutation_count = self._get_mutation_count()
 
-        if nr_mut > 0:
+        if mutation_count > 0:
             success_mut = 0
-            while success_mut < nr_mut:  # do the mutations one by one
+            while success_mut < mutation_count:  # do the mutations one by one
                 where = random.randrange(
                     0, len(self.sequence)
                 )  # draw where the mutation will take place
-                base = self.current_gen.get_base(seq_id_old, where)
+                base = self.current_population.get_base(seq_id_old, where)
                 rand_nr = random.random()  # draw a random nr for base substitution
 
-                to_check = self.settings["subs_matrix"][int(base), :]
+                to_check = self.settings.subs_matrix[int(base), :]
                 # get the cumulative distribution of base substitutions
                 new_base = np.where(to_check > rand_nr)[0][0]  # find the new base
 
@@ -436,70 +330,60 @@ class Simulation(object):
                 # sure mutations are accepted in line with the G-A increase
                 if base != new_base:
                     if (base == 1) and (new_base == 0):  # G-A mutations
-                        if (self.settings["ga_increase"] >= 1) or (
+                        if (self.settings.ga_increase >= 1) or (
                             random.random() < self.settings["ga_increase"]
                         ):
                             pop.add_change(seq_id_new, where, new_base)
                             success_mut += 1
                     elif (base != 1) or (new_base != 0):  # not G-A mutation
-                        if (self.settings["ga_increase"] <= 1) or random.random() < (
-                            1.0 / self.settings["ga_increase"]
+                        if (self.settings.ga_increase <= 1) or random.random() < (
+                            1.0 / self.settings.ga_increase
                         ):
                             pop.add_change(seq_id_new, where, new_base)
                             success_mut += 1
-            return True
-        else:
-            return False
 
-    def new_generation(self, new_gen=None, dieout=False):
+        return bool(mutation_count)
+
+    def new_generation(self, new_gen=None):
+        """Create a new generation in the simulation.
+
+        Updates state of the simulation.
+
+        Parameters
+        ----------
+        new_gen : Population
+            Population to store the new generation in. If `None` a new
+            Population will be created. Default: None.
+
+        Returns
+        -------
+        The new Population
         """
-        Create a new generation in the simulation
-
-        **Arguments**:
-        * `new_gen` (Population): the population to store the new generation in
-        (a new Population instance will be created if left out)
-        * `dieout` (Bool): allow the populations to die out (True) or redo
-        new_generation if the population died out (False, default)
-
-        **Returns**:
-            Nothing. Updates current_gen, effective_pop, gen, average_fitness,
-            and n_seq
-        """
-        self.effective_pop = 0
         self.gen += 1
         if new_gen is None:
-            new_gen = Population(self, n_seq=0)
+            new_gen = Population(self.sequence, self, n_seq=0)
         all_offspring = []
 
-        fitnesses = [
-            0
-        ] * self.current_gen.n_seq  # will hold the fitness values for all sequences
-        weights = [
-            0
-        ] * self.current_gen.n_seq  # will hold the weights (number of ofspring) for all sequences
+        # will hold the fitness values for all sequences
+        fitnesses = [0] * self.current_population.n_seq
+        # will hold the weights (number of offspring) for all sequences
+        weights = [0] * self.current_population.n_seq
 
         # generate offspring list
-        try:
-            xrange()
-        except NameError:
-            xrange = range
-
-        for i in range(self.current_gen.n_seq):
-            # find changes in current sequence
-            # find the number of offspring based on the mutations that already took place
-            n_offspring, fitness = self.get_nr_offspring(i, return_fitness=True)
-            weights[i] = n_offspring
+        for i in range(self.current_population.n_seq):
+            fitness = self.get_sequence_fitness(i)
             fitnesses[i] = fitness
+            weights[i] = self.get_offspring_count(fitness)
 
         # get average fitness of this generation
         self.average_fitness = np.mean(fitnesses)
 
-        if sum(weights) > self.settings["max_pop"]:
+        if sum(weights) > self.settings.max_pop:
             # reduce the population randomly to max_pop
             all_offspring = sorted(
                 np.random.choice(
-                    list(range(self.current_gen.n_seq)),
-                    size=int(self.settings["max_pop"]),
+                    list(range(self.current_population.n_seq)),
+                    size=int(self.settings.max_pop),
                     p=np.array(weights, dtype=float) / sum(weights),
                 )
             )
@@ -511,27 +395,51 @@ class Simulation(object):
         for i in all_offspring:
             if i != ancestor:
                 ancestor = i
-                self.effective_pop += 1
-                changes = self.current_gen.get_seq(i)
+                changes = self.current_population.get_seq(i)
             seq_id = new_gen.add_sequence(changes=changes)
 
             self.mutate_seq(new_gen, seq_id, i)
 
-        if new_gen.n_seq == 0 and not dieout:
-            print("died out")
-            n_gen = self.gen
-            self = self.copy(self.settings["name"])
-            for i in range(n_gen):
-                self.new_generation()
+        self.current_population = new_gen
 
-        else:
-            self.current_gen = new_gen
-        self.n_seq = self.current_gen.n_seq
+        self.n_seq = self.current_population.n_seq
 
-    def copy(self, name, n_seq=-1, **kwargs):
+        return self.current_population
+
+    def _get_mutation_count(self):
+        """Get a mutation count.
+
+        Uses a pregenerated iterator with mutation counts for efficiency.
         """
-        create a deep copy of the simulation, number of generations will be set
-        back to 0
+        if self._future_mutation_counts is None:
+            self._future_mutation_counts = self._get_future_mutation_counts()
+        try:
+            mutation_count = next(self._future_mutation_counts)
+        except StopIteration:
+            self._future_mutation_counts = self._get_future_mutation_counts()
+            mutation_count = next(self._future_mutation_counts)
+        return mutation_count
+
+    def _get_future_mutation_counts(self):
+        """Predraw the number of mutations."""
+        return iter(
+            np.random.binomial(len(self.sequence), self.settings.mutation_rate, 1000)
+        )
+
+    def __str__(self):
+        string = "sequence simulation\n"
+        string += f"MED model\t{self.settings.model}\n"
+        for parameter, value in self.settings.parameters.items():
+            string += f"{parameter}\t{value}\n"
+        string += f"ancestor\t{str(self.sequence)}\n"
+        string += f"number of generations\t{str(self.gen)}\n"
+        stats = self.current_population.stats()
+        for stat, value in stats.items():
+            string += f"{stat}\t{value}\n"
+        return string
+
+    def copy(self, n_seq=-1, **kwargs):
+        """Create a copy of the simulation with settings.
 
         **Arguments**:
         * `name`: the name to use for the copy
@@ -542,382 +450,23 @@ class Simulation(object):
         """
         if n_seq == -1:  # original state
             return Simulation(
+                self.sequence,
                 deepcopy(self.settings),
-                sequence=self.sequence,
                 fitness_table=self.fitness_table,
-                name=name,
-                **kwargs
+                **kwargs,
             )
         else:
             simcopy = Simulation(
+                self.sequence,
                 deepcopy(self.settings),
-                sequence=self.sequence,
                 fitness_table=self.fitness_table,
-                name=name,
                 n_seq_init=n_seq,
-                **kwargs
+                **kwargs,
             )
-            sample = self.current_gen.get_sample(n_seq)
+            sample = self.current_population.get_sample(n_seq)
             for i, s in enumerate(sample):
-                changes = self.current_gen.get_seq(s)
+                changes = self.current_population.get_seq(s)
                 if changes is not None:
                     for c in changes:
-                        simcopy.current_gen.add_change(i, c[0], c[1])
+                        simcopy.current_population.add_change(i, c[0], c[1])
             return simcopy
-
-
-class Population:
-    """
-    class representing a population beloning to a simulation
-
-    **Attributes**:
-    * `changed` (set): the sequence IDs that countain a mutation
-    * `changes` (dict): contains a numpy array per sequence with the position
-    and new base per mutation
-    * `sim` (Simulation): the simulation to which this Population belongs
-    * `n_seq`: the number of sequences in the population
-
-    **Arguments**:
-    * `simulation` (Simulation): the simulation to which this Population belongs
-    * `changes` (dict): for pre-exsisting changes. Numpy array per sequence with
-    the position and new base per mutation
-    * `changed` (set): for pre-existing changes: the sequence IDs that countain a mutation
-    * `n_seq` (int): number of sequences in the population (default 1)
-
-    """
-
-    def __init__(self, simulation, changes=None, changed=None, n_seq=None, **kwargs):
-        """
-        Initialize the Population
-
-        Arguments:
-            simulation (Simulation): the simulation to which this Population belongs
-            changes (dict): for pre-exsisting changes. Numpy array per sequence with
-                the position and new base per mutation
-            changed (set): for pre-existing changes: the sequence IDs that countain a mutation
-            n_seq (int): number of sequences in the population (default 1)
-        """
-        if changes is None:
-            self.changed = set([])
-            self.changes = {}
-        else:
-            self.changes = changes
-            for i in self.changes:
-                self.changes[i] = np.array(self.changes[i])
-            self.changed = set(changed)
-        self.sim = simulation
-        if n_seq is None:
-            self.n_seq = self.sim.n_seq
-        else:
-            self.n_seq = n_seq
-
-    def __len__(self):
-        return self.n_seq
-
-    def __str__(self):
-        string = "#mutID (from-pos-to)\tsequence\tpatient\n"
-        for i in range(self.n_seq):
-            if i in self.changed:
-                for j in self.changes[i]:
-                    pos = j[0]
-                    string += "{orig}-{pos}-{to}\t{seq}\t{patient}\n".format(
-                        orig=self.sim.sequence[pos],
-                        pos=pos,
-                        to=self.sim.sequence.translation[j[1]],
-                        seq=i,
-                        patient=self.sim.settings["name"],
-                    )
-        return string
-
-    def copy(self):
-        """create a deep copy of the population"""
-        return Population(
-            self.sim.copy(str(self.sim.settings["name"]) + "_copy"),
-            deepcopy(self.changes),
-            deepcopy(self.changed),
-            self.n_seq,
-        )
-
-    def print_sample(self, seq_ids):
-        """print a summary of the mutations that have occured
-
-        Prints a summary of the mutations that have occured in all seq_ids in
-        the format: #mutID (from-pos-to)\tsequence\tpatient\n
-
-        **Arguments**:
-        * `seq_ids` (list): the ids of the sequences to print a summary of
-
-        **Returns**:
-        Nothing. Output is printed to stdout.
-        """
-        if any(np.array(seq_ids) > self.n_seq):
-            raise IndexError("seqID out of range")
-        string = "#mutID (from-pos-to)\tsequence\tpatient\n"
-        for i in range(self.n_seq):
-            if i in self.changed and i in seq_ids:
-                for j in self.changes[i]:
-                    pos = j[0]
-                    string += "{orig}-{pos}-{to}\t{seq}\t{patient}\n".format(
-                        orig=self.sim.sequence[pos],
-                        pos=pos,
-                        to=self.sim.sequence.translation[j[1]],
-                        seq=i,
-                        patient=self.sim.settings["name"],
-                    )
-        print(string)
-
-    def sample_to_string(self, seq_ids):
-        """create a summary of the mutations that have occured
-
-        **Arguments**:
-        * `seq_ids` (list): the ids of the sequences to print a summary of
-
-        **Returns**:
-        * `string`: summary of the mutations that have occured in the seq_ids,
-        in the format "#mutID (from-pos-to)\tsequence\tpatient"
-
-        """
-        string = "#mutID (from-pos-to)\tsequence\tpatient\n"
-        for i in range(self.n_seq):
-            if i in self.changed and i in seq_ids:
-                for j in self.changes[i]:
-                    pos = j[0]
-                    string += "{orig}-{pos}-{to}\t{seq}\t{patient}\n".format(
-                        orig=self.sim.sequence[pos],
-                        pos=pos,
-                        to=self.sim.sequence.translation[j[1]],
-                        seq=i,
-                        patient=self.sim.settings["name"],
-                    )
-        return string
-
-    def get_sample(self, sample_size):
-        """get a random sample from the population
-        If the sample size is larger than the population, the whole population is
-        returned
-
-        **Arguments**:
-        * `sample_size` (int): the size of the sample
-
-        **Returns**:
-            a list of sequence IDs randomly sampled from the population
-        """
-        try:
-            return np.random.choice(self.n_seq, size=int(sample_size), replace=False)
-        except ValueError:
-            return list(range(self.n_seq))
-
-    def delete_sequence(self, ID):
-        """delete sequence from the population.
-        Sequence IDs will be reassigned to fit within the new number of sequences.
-
-        **Arguments**:
-        * `ID` (int): the sequence ID of the sequence to remove
-
-        **Returns**:
-        nothing. Sequence is removed in-place.
-        """
-        self.n_seq -= 1
-        if self.get_seq(ID) is not None:
-            self.changed.remove(ID)
-            del self.changes[ID]
-
-        if self.get_seq(self.n_seq) is not None:
-            self.changed.remove(self.n_seq)
-            self.changed.add(ID)
-
-            self.changes[ID] = self.changes[self.n_seq]
-            del self.changes[self.n_seq]
-
-    def add_sequence(self, changes=None):
-        """add a sequence to the population
-
-        add a sequence, optionally with certain changes (as a list of position, new), to the population
-
-        **Arguments**:
-        * `changes`: the changes present in this sequence
-
-        **Returns**:
-        the sequence ID of the newly added sequence
-        """
-        self.n_seq += 1
-        if changes is not None:
-            for i in changes:
-                self.add_change(self.n_seq - 1, i[0], i[1])
-
-        return self.n_seq - 1
-
-    def add_change(self, seq_id, pos, target):
-        """add a change to an existing sequence
-
-        **Arguments**:
-        * `seq_id` (int): the sequence ID to add the change to
-        * `pos` (int): the position of the change
-        * `target` (int): the new base at the changed position
-
-        **Returns**:
-            Nothing. Population is changed in-place.
-        """
-        if pos > len(self.sim.sequence):
-            raise IndexError("Pos {} outside sequence length".format(pos))
-
-        if seq_id > self.n_seq:
-            raise IndexError(
-                "SeqID {} outside pop size {} {}".format(seq_id, self.n_seq, self)
-            )
-
-        if seq_id in self.changed:
-            # add to existing changes list
-            if pos in self.changes[seq_id][:, 0]:
-                self.changes[seq_id][self.changes[seq_id][:, 0] == pos, 1] = target
-            else:
-                self.changes[seq_id] = np.vstack((self.changes[seq_id], [pos, target]))
-        else:
-            # add a new changed sequence
-            self.changed.add(seq_id)
-            self.changes[seq_id] = np.array([[pos, target]])
-
-    def get_base(self, seq_id, pos):
-        """get the current base at position pos in sequence with id seq_id"""
-        if seq_id in self.changed:
-            if pos in self.changes[seq_id][:, 0]:
-                return self.changes[seq_id][self.changes[seq_id][:, 0] == pos, 1]
-        return self.sim.sequence.sequence[pos]
-
-    def stats(self):
-        """return a dict of stats about the population
-
-        **Keys in the returned dict:**
-        * `n_seq`: the total number of sequences in the current generation
-        * `unmutated`: the number of unmutated sequences
-        * `total_mutations`: the number of mutations in total
-        * `unique_mutations`: the length of the set of all mutations
-        * `majority_mutations`: the number of mutations that reached majority
-        * `max_fraction`: the highest fraction reached by a mutation
-        * `GA_rate`: the fraction of mutations that are G-to-A
-        """
-        stats = {}
-        stats["n_seq"] = self.n_seq
-        stats["unmutated"] = self.n_seq - len(self.changes)
-        if len(self.changed) > 0:
-            all_mutations = np.vstack(list(self.changes.values()))
-        else:
-            all_mutations = []
-        stats["total_mutations"] = len(all_mutations)
-        all_mutations = [tuple(row) for row in all_mutations]
-        stats["unique_mutations"] = len(set(all_mutations))
-
-        if len(all_mutations) > 0:
-            mut_counts = np.array(list(Counter(all_mutations).values()))
-        else:
-            mut_counts = []
-        if len(mut_counts) > 0:
-            stats["majority_mutations"] = sum(mut_counts > (stats["n_seq"] / 2.0))
-            stats["max_fraction"] = max(mut_counts / float(stats["n_seq"]))
-        else:
-            stats["majority_mutations"] = 0
-            stats["max_fraction"] = 0
-        GA = 0
-        for i in all_mutations:
-            if self.sim.sequence[i[0]] == 1 and i[1] == 0:
-                GA += 1.0
-        try:
-            stats["GA_rate"] = GA / len(all_mutations)
-        except ZeroDivisionError:
-            stats["GA_rate"] = None
-        return stats
-
-    def to_fasta(self, seq_ids=[], n_seq=None, description="", progress=False):
-        """
-        convert (part of) the population to fasta-format.
-
-        Without any arguments, all sequences in the population will be returned.
-
-        **Optional arguments**:
-        * `seq_ids` (list): list of sequence IDs to convert to fasta-format
-        * `n_seq`: number of sequences to convert to fasta-format (random draw
-        from population). This number will be ignored if seq_ids is given
-        * `description` (str): description of the sequences, will be added after
-        the sequenceID in the header of each sequence
-        * `progress` (Bool): display a progress bar?
-
-        **Returns**:
-            str: the selected sequences in fasta-format
-        """
-        string = ""
-        if len(seq_ids) == 0:
-            if n_seq is None or n_seq > self.n_seq:
-                n_seq = self.n_seq
-
-            seq_ids = random.sample(list(range(self.n_seq)), n_seq)
-        for i in range(len(seq_ids)):
-            seqID = seq_ids[i]
-            string += ">" + str(seqID) + "" + str(description) + "\n"
-            changed_here = self.get_seq(seqID)
-            seq = deepcopy(self.sim.sequence)
-            if changed_here is not None:
-                for i in changed_here:
-                    seq.sequence[int(i[0])] = int(i[1])
-            string += str(seq) + "\n"
-        return string
-
-    def consensus_sequence(self):
-        """return the consensus sequence of the population"""
-        seq = deepcopy(self.sim.sequence)
-        all_mutations = np.vstack(list(self.changes.values()))
-        all_mutations = [tuple(row) for row in all_mutations]
-
-        mutations = Counter(all_mutations)
-        for mut in list(mutations.keys()):
-            if mutations[mut] >= self.n_seq / 2.0:
-                seq.sequence[int(mut[0])] = int(mut[1])
-        return seq
-
-    def get_seq(self, sequence_id):
-        """get the changes in the sequence with id sequence_id
-
-        **Raises**:
-            `IndexError`: when sequence_id is out of bounds
-        """
-        if sequence_id > self.n_seq:
-            raise IndexError("sequence_id is out of bounds")
-        elif sequence_id in self.changed:
-            return self.changes[sequence_id]
-        else:
-            return None
-
-    def hamming_distance(self, sample, action="mean"):
-        """
-        calculate the inter-sequence hamming distances in a sample.
-        if action is 'mean', return the mean hamming distance,
-        if action is 'Poisson_fit', return the poisson fit for the time since
-            infection from the distribution of hamming distances as presented
-            in Lee et al, 2010
-        """
-        simulation_settings = self.sim.settings
-        HDs = []
-        for i in sample:
-            if i in self.changed:
-                changed1 = [str(k) for k in self.changes[i]]
-            else:
-                changed1 = []
-            for j in sample:
-                if i != j:
-                    if j in self.changed:
-                        changed2 = [str(k) for k in self.changes[j]]
-                    else:
-                        changed2 = []
-                    HDs.append(len(set(list(changed1)) ^ set(list(changed2))))
-        if action == "mean":
-            return np.mean(HDs)
-        elif action == "Poisson_fit":
-            poiss = np.mean(HDs) / (
-                2 * simulation_settings["mut_rate"] * simulation_settings["seq_len"]
-            )
-            exp = scats.poisson.pmf(list(range(max(HDs) + 1)), np.mean(HDs)) * len(HDs)
-            obs = np.histogram(HDs, bins=list(range(0, max(HDs) + 2)))[0]
-            pval = scats.chisquare(obs, exp, ddof=len(exp) - 1 - len(sample)).pvalue
-            if np.isnan(pval) or pval > 0.05:
-                return poiss
-            else:
-                return np.nan

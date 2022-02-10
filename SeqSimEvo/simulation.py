@@ -4,99 +4,53 @@ Created on Thu Dec 15 13:42:33 2016
 @author: eva
 """
 
-import pkg_resources
-import sys
-from collections import Counter
 import random
-from copy import copy, deepcopy
-import time
-import os
-import inspect
+from collections import Counter
+from copy import deepcopy
 
 import numpy as np
+import pkg_resources
 
-np.set_printoptions(threshold=sys.maxsize, suppress=True)
-import yaml
 import scipy.stats as scats
+import yaml
 
 
 class Seq(object):
-    """
-    Sequence class.
+    """Sequence core class.
 
-    **Attributes**:
-    * `translation` (str): the translation order from bases (ATGC) to numbers
-    * `len` (int): the length of the sequence
-    * `sequence` (list): a list representation of the sequence
-
-    **Keyword Arguments**:
-    * `seq_len` (int): length of the sequence to generate. Will be ignored if `seq` is provided. Default 100.
-    * `base_dist` (list): list of length 4, base distribution in order A-G-T-C.
-    Distribution is cumulative: equal base distribution would be represented
-    as [0.25,0.5,0.75,1]. When not provided, will default to equal base distribution
-    * `seq` (str): the sequence to use. When not provided, a random sequence
-    will be generated according to `seq_len` and `base_dist`
+    Attributes
+    ----------
+    translation : str
+        Order of translation from bases (A, T, G, C) to numbers
+    sequence : list
+        A string representation of the sequence
     """
 
-    def __init__(self, seq_len=100, base_dist=None, seq="", **kwargs):
+    def __init__(self, seq: list, **kwargs):
+        """Create a sequence object.
+
+        Parameters
+        ----------
+        seq : list
+            Sequence
         """
-        Create a sequence object.
-
-        *Keyword Arguments*:
-        * `seq_len` (int): length of the sequence to generate. Will be ignored if `seq` is provided. Default 100.
-        * `base_dist` (list): list of length 4, base distribution in order A-G-T-C.
-        Distribution is cumulative: equal base distribution would be represented
-        as [0.25,0.5,0.75,1]. When not provided, will default to equal base distribution
-        * `seq` (str): the sequence to use. When not provided, a random sequence
-        will be generated according to `seq_len` and `base_dist`"""
         self.translation = "AGTC"
-        if seq == "":
-            self.generate_seq(seq_len, base_dist)
-            self.len = seq_len
-        else:
-            self.sequence = self.translate_sequence(seq)
-            self.len = len(seq)
 
-    def __str__(self):
-        seq = ""
-        for i in self.sequence:
-            seq += self.translation[i]
-        return seq
+        if isinstance(seq, str):
+            seq = self.translate_sequence(seq)
 
-    def __len__(self):
-        return self.len
+        self.sequence = seq
 
-    def __getitem__(self, key):
-        return self.translation[self.sequence[key]]
+    @classmethod
+    def generate_sequence(cls, seq_len: int, base_dist: list = None):
+        """Generate random sequence.
 
-    def translate_sequence(self, seq):
-        """
-        translate a sequence from bases to numbers
-
-        **Arguments**:
-        * `seq`: string (base) representation of the sequence
-
-        **Returns**:
-        list (number) representation of the sequence
-        """
-        sequence = []
-        for i in seq:
-            sequence.append(self.translation.index(i))
-        return sequence
-
-    def generate_seq(self, seq_len, base_dist=None):
-        """
-        Sets the sequence to a random sequence of seq_len bases according to the
-        base distribution
-
-        **Arguments**:
-        * `seq_len` (int): the length of the sequence to generate
-        * `base_dist` (list): list of length 4, base distribution in order A-G-T-C.
-        Distribution is cumulative: equal base distribution would be
-        represented as [0.25,0.5,0.75,1] (which is the default)
-
-        **Returns**:
-            Nothing.
+        Parameters
+        ----------
+        seq_len : int
+            Length of sequence.
+        base_dist : list
+            Base distribution as list in order A, G, T, C. Default: None
         """
         if seq_len < 0:
             raise TypeError("seq_len must be positive integer")
@@ -105,9 +59,33 @@ class Seq(object):
             base_dist = np.array([0.25, 0.5, 0.75, 1])
         else:
             base_dist = np.array(base_dist)
-        for i in range(seq_len):
+        for _ in range(seq_len):
             seq.append(4 - sum(base_dist > random.random()))
-        self.sequence = seq
+        return cls(seq)
+
+    def translate_sequence(self, seq: list):
+        """Translate a sequences from bases to numbers.
+
+        Parameters
+        ----------
+        seq : str
+            String representation of a sequence.
+
+        Returns
+        -------
+        list
+            Representation of the sequence.
+        """
+        return [self.translation.index(symbol) for symbol in seq]
+
+    def __str__(self):
+        return "".join([self.translation[idx] for idx in self.sequence])
+
+    def __len__(self):
+        return len(self.sequence)
+
+    def __getitem__(self, key):
+        return self.translation[self.sequence[key]]
 
 
 class Simulation(object):
@@ -222,10 +200,12 @@ class Simulation(object):
         )
 
         if "sequence" not in list(self.settings.keys()):
-            self.sequence = Seq(self.settings["seq_len"], self.settings["basedist"])
+            self.sequence = Seq.generate_sequence(
+                self.settings["seq_len"], self.settings["basedist"]
+            )
         else:
             self.sequence = self.settings["sequence"]
-            self.settings["seq_len"] = self.sequence.len
+            self.settings["seq_len"] = len(self.sequence)
 
         if "fitness_table" not in list(self.settings.keys()):
             if self.settings["model"] == "exponential":
@@ -264,7 +244,7 @@ class Simulation(object):
         """select the number of mutations that will happen for the next 1000
         mutated sequences. implemented for increased efficiency"""
         return iter(
-            np.random.binomial(self.sequence.len, self.settings["mut_rate"], 1000)
+            np.random.binomial(len(self.sequence), self.settings["mut_rate"], 1000)
         )
 
     def __str__(self):
@@ -282,7 +262,7 @@ class Simulation(object):
     def getfitness_table(self):
         """creates a table with random fitness values according to model and
         parameters par in settings"""
-        seq_len = self.sequence.len
+        seq_len = len(self.sequence)
         # create an array filled with 0 (all lethal)
         fitness = np.zeros((4, seq_len))
         # make sure the fitness benefit of the initial sequence is 1
@@ -443,7 +423,7 @@ class Simulation(object):
             success_mut = 0
             while success_mut < nr_mut:  # do the mutations one by one
                 where = random.randrange(
-                    0, self.sequence.len
+                    0, len(self.sequence)
                 )  # draw where the mutation will take place
                 base = self.current_gen.get_base(seq_id_old, where)
                 rand_nr = random.random()  # draw a random nr for base substitution
@@ -906,7 +886,7 @@ class Population:
         else:
             return None
 
-    def Hamming_distance(self, sample, action="mean"):
+    def hamming_distance(self, sample, action="mean"):
         """
         calculate the inter-sequence hamming distances in a sample.
         if action is 'mean', return the mean hamming distance,

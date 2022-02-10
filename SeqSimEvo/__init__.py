@@ -1,4 +1,4 @@
-from . import simulation
+from .simulation import Seq, Simulation, Population
 
 # from . import GUI
 # from . import Scenarios

@@ -1,8 +1,9 @@
 """Simulation core class."""
 
 import random
-from dataclasses import dataclass
+
 from copy import deepcopy
+from collections import Counter
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -56,7 +57,6 @@ class Simulation:
             self.fitness_table = self.get_fitness_table()
 
         self.gen = 0
-        self.average_fitness = 1
         self.n_seq = self.settings.n_seq_init
 
         self.current_population = Population(
@@ -69,6 +69,13 @@ class Simulation:
     def effective_population(self):
         """Effective population size."""
         return len(self.current_population)
+
+    @property
+    def average_fitness(self):
+        """Average fitness of current population."""
+        return np.mean(
+            [self.get_sequence_fitness(i) for i in range(len(self.current_population))]
+        )
 
     def get_fitness_table(self):
         """Creates a table with random fitness.
@@ -274,36 +281,38 @@ class Simulation:
         # get the number of mutations that will take place
         mutation_count = self._get_mutation_count()
 
-        if mutation_count > 0:
-            success_mut = 0
-            while success_mut < mutation_count:  # do the mutations one by one
-                where = random.randrange(
-                    0, len(self.sequence)
-                )  # draw where the mutation will take place
-                base = self.current_population.get_base(seq_id_old, where)
-                rand_nr = random.random()  # draw a random nr for base substitution
+        if mutation_count <= 0:
+            return False
 
-                to_check = self.settings.subs_matrix[int(base), :]
-                # get the cumulative distribution of base substitutions
-                new_base = np.where(to_check > rand_nr)[0][0]  # find the new base
+        success_mut = 0
+        while success_mut < mutation_count:  # do the mutations one by one
+            where = random.randrange(
+                0, len(self.sequence)
+            )  # draw where the mutation will take place
+            base = self.current_population.get_base(seq_id_old, where)
+            rand_nr = random.random()  # draw a random nr for base substitution
 
-                # only accept the mutation if there was an actual change and make
-                # sure mutations are accepted in line with the G-A increase
-                if base != new_base:
-                    if (base == 1) and (new_base == 0):  # G-A mutations
-                        if (self.settings.ga_increase >= 1) or (
-                            random.random() < self.settings["ga_increase"]
-                        ):
-                            pop.add_change(seq_id_new, where, new_base)
-                            success_mut += 1
-                    elif (base != 1) or (new_base != 0):  # not G-A mutation
-                        if (self.settings.ga_increase <= 1) or random.random() < (
-                            1.0 / self.settings.ga_increase
-                        ):
-                            pop.add_change(seq_id_new, where, new_base)
-                            success_mut += 1
+            to_check = self.settings.subs_matrix[int(base), :]
+            # get the cumulative distribution of base substitutions
+            new_base = np.where(to_check > rand_nr)[0][0]  # find the new base
 
-        return bool(mutation_count)
+            # only accept the mutation if there was an actual change and make
+            # sure mutations are accepted in line with the G-A increase
+            if base != new_base:
+                if (base == 1) and (new_base == 0):  # G-A mutations
+                    if (self.settings.ga_increase >= 1) or (
+                        random.random() < self.settings["ga_increase"]
+                    ):
+                        pop.add_change(seq_id_new, where, new_base)
+                        success_mut += 1
+                elif (base != 1) or (new_base != 0):  # not G-A mutation
+                    if (self.settings.ga_increase <= 1) or random.random() < (
+                        1.0 / self.settings.ga_increase
+                    ):
+                        pop.add_change(seq_id_new, where, new_base)
+                        success_mut += 1
+
+        return True
 
     def new_generation(self, new_gen=None):
         """Create a new generation in the simulation.
@@ -325,19 +334,10 @@ class Simulation:
             new_gen = Population(self.sequence, n_seq=0)
         all_offspring = []
 
-        # will hold the fitness values for all sequences
-        fitnesses = [0] * self.current_population.n_seq
-        # will hold the weights (number of offspring) for all sequences
-        weights = [0] * self.current_population.n_seq
-
-        # generate offspring list
-        for i in range(self.current_population.n_seq):
-            fitness = self.get_sequence_fitness(i)
-            fitnesses[i] = fitness
-            weights[i] = self.get_offspring_count(fitness)
-
-        # get average fitness of this generation
-        self.average_fitness = np.mean(fitnesses)
+        fitnesses = [
+            self.get_sequence_fitness(i) for i in range(len(self.current_population))
+        ]
+        weights = [self.get_offspring_count(fitness) for fitness in fitnesses]
 
         if sum(weights) > self.settings.max_pop:
             # reduce the population randomly to max_pop
@@ -351,15 +351,12 @@ class Simulation:
         else:
             all_offspring = [i for i, j in enumerate(weights) for k in range(j)]
 
-        # actually create the next generation
-        ancestor = -1
-        for i in all_offspring:
-            if i != ancestor:
-                ancestor = i
-                changes = self.current_population.get_seq(i)
-            seq_id = new_gen.add_sequence(changes=changes)
-
-            self.mutate_seq(new_gen, seq_id, i)
+        offspring_counter = Counter(all_offspring)
+        for seq_id, count in offspring_counter.items():
+            changes = self.current_population.get_seq(seq_id)
+            for _ in range(count):
+                new_seq_id = new_gen.add_sequence(changes=changes)
+                self.mutate_seq(new_gen, new_seq_id, seq_id)
 
         self.current_population = new_gen
 

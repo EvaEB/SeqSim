@@ -31,6 +31,7 @@ class SimulationSettings:
 
     parameters: dict = None
     offspring_sigma: float = 0
+    dilution: float = -1.0
 
     def __post_init__(self):
         if isinstance(self.subs_matrix, list):

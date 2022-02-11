@@ -343,12 +343,18 @@ class Simulation:
         ]
         weights = [self.get_offspring_count(fitness) for fitness in fitnesses]
 
-        if sum(weights) > self.settings.max_pop:
+        pop_size = sum(weights)
+        target_size = self.settings.max_pop
+
+        if self.settings.dilution > 0:
+            target_size = min(pop_size * self.settings.dilution, self.settings.max_pop)
+
+        if pop_size > target_size:
             # reduce the population randomly to max_pop
             all_offspring = sorted(
                 np.random.choice(
                     list(range(self.current_population.n_seq)),
-                    size=int(self.settings.max_pop),
+                    size=int(target_size),
                     p=np.array(weights, dtype=float) / sum(weights),
                 )
             )

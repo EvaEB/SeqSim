@@ -328,7 +328,7 @@ class Simulation:
         """Generate offspring counts for all sequences."""
         return [self.get_offspring_count(fitness) for fitness in self.fitnesses]
 
-    def subsample_population(self, weights, sort=True):
+    def subsample_population(self, weights: list, factor: int = 1, sort: bool = True):
         """Subsample the amplified population."""
         pop_size = sum(weights)
         target_size = self.settings.max_pop
@@ -341,7 +341,7 @@ class Simulation:
 
         sample = np.random.choice(
             list(range(self.current_population.n_seq)),
-            size=int(target_size),
+            size=int(target_size * factor),
             p=np.array(weights, dtype=float) / sum(weights),
         )
 

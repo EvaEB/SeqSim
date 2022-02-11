@@ -8,6 +8,8 @@ from collections import Counter
 import numpy as np
 import scipy as sp
 
+from .sequence import Sequence
+
 
 class Population:
     """Population core class.
@@ -24,7 +26,14 @@ class Population:
         Number of sequences in the population
     """
 
-    def __init__(self, sequence, n_seq, changes=None, changed=None, **kwargs):
+    def __init__(
+        self,
+        sequence: Sequence,
+        n_seq: int,
+        changes: dict = None,
+        changed: set = None,
+        **kwargs
+    ):
         """Initialize the Population
 
         Arguments:
@@ -43,6 +52,27 @@ class Population:
                 self.changes[i] = np.array(self.changes[i])
             self.changed = set(changed)
         self.n_seq = n_seq
+
+    def __add__(self, other):
+        if self.sequence != other.sequence:
+            raise ValueError("Can only add Populations with same reference sequence.")
+        population = copy(self)
+        for seq_id in range(other.n_seq):
+            population.add_sequence(other.get_seq(seq_id))
+        return population
+
+    @classmethod
+    def merge(cls, *populations):
+        """Merge a list of populations."""
+        sequence = populations[0]
+        if not all(sequence == population.sequence for population in populations):
+            raise ValueError("Can only merge Populations with same reference sequence.")
+
+        new_population = cls(sequence, 0)
+        for population in populations:
+            for seq_id in range(population.n_seq):
+                new_population.add_sequence(population.get_seq(seq_id))
+        return new_population
 
     def copy(self):
         """Create a deep copy of the population"""
@@ -240,9 +270,8 @@ class Population:
             stats["GA_rate"] = None
         return stats
 
-    def to_fasta(self, seq_ids=[], n_seq=None, description="", progress=False):
-        """
-        convert (part of) the population to fasta-format.
+    def to_fasta(self, seq_ids=None, n_seq=None, description="", progress=False):
+        """Convert (part of) the population to fasta-format.
 
         Without any arguments, all sequences in the population will be returned.
 
@@ -257,6 +286,8 @@ class Population:
         **Returns**:
             str: the selected sequences in fasta-format
         """
+        if seq_ids is None:
+            seq_ids = []
         string = ""
         if len(seq_ids) == 0:
             if n_seq is None or n_seq > self.n_seq:
@@ -275,7 +306,7 @@ class Population:
         return string
 
     def consensus_sequence(self):
-        """return the consensus sequence of the population"""
+        """Compute consensus sequence of the population."""
         seq = deepcopy(self.sequence)
         all_mutations = np.vstack(list(self.changes.values()))
         all_mutations = [tuple(row) for row in all_mutations]
@@ -287,14 +318,16 @@ class Population:
         return seq
 
     def get_seq(self, sequence_id):
-        """get the changes in the sequence with id sequence_id
+        """Get the changes in the sequence with id sequence_id
 
-        **Raises**:
-            `IndexError`: when sequence_id is out of bounds
+        Raises
+        ------
+        `IndexError`: When sequence_id is out of bounds
         """
         if sequence_id > self.n_seq:
             raise IndexError("sequence_id is out of bounds")
-        elif sequence_id in self.changed:
+
+        if sequence_id in self.changed:
             return self.changes[sequence_id]
         else:
             return None

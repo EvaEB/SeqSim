@@ -70,93 +70,130 @@ class Simulation:
         """Effective population size."""
         return len(self.current_population)
 
-    def _fitness_from_exponential(self):
-        pass
-
     def get_fitness_table(self):
         """Creates a table with random fitness.
 
         Initiate an array with random fitness values according to the model and
         parameters set in settings.
         """
+        if self.settings.model == "neutral":  # neutral model
+            fitness = self._get_fitness_neutral()
+        elif self.settings.model == "exponential":  # lethals+beneficial+deleterious
+            fitness = self._get_fitness_exponential()
+        elif self.settings.model == "spikes":
+            fitness = self._get_fitness_spikes()
+        elif self.settings.model in ["lognormal", "lognormal_ben_only"]:
+            fitness = self._get_fitness_lognormal()
+        elif self.settings.model == "beta":
+            fitness = self._get_fitness_beta()
+        elif self.settings.model == "from_data":
+            fitness = self._get_fitness_from_data()
+
+        return fitness
+
+    def _get_fitness_neutral(self):
         seq_len = len(self.sequence)
-        # create an array filled with 0 (all lethal)
+        return np.ones((4, seq_len))
+
+    def _get_fitness_exponential(self):
+        seq_len = len(self.sequence)
         fitness = np.zeros((4, seq_len))
-        # make sure the fitness benefit of the initial sequence is 1
         for (idx, base) in enumerate(self.sequence.sequence):
             fitness[base, idx] = 1
         to_fill = np.where(fitness == 0)
+        for i, j in zip(*to_fill):
+            random_number = random.random()
+            if random_number < self.settings.parameters["fl"]:
+                fitness[i, j] = 0
+            elif (
+                random_number
+                < self.settings.parameters["fl"] + self.settings.parameters["fn"]
+            ):
+                fitness[i, j] = 1
+            elif (
+                random_number
+                < self.settings.parameters["fl"]
+                + self.settings.parameters["fn"]
+                + self.settings.parameters["fb"]
+            ):
+                fitness[i, j] = 1 + np.random.exponential(
+                    self.settings.parameters["lb"]
+                )
+            else:
+                fitness[i, j] = 1 - np.random.exponential(
+                    self.settings.parameters["ld"]
+                )
+            if fitness[i, j] < 0:
+                fitness[i, j] = 0
+        return fitness
 
-        if self.settings.model == "neutral":  # neutral model
-            fitness = np.ones((4, seq_len))
-        elif self.settings.model == "exponential":  # lethals+beneficial+deleterious
-            for i, j in zip(to_fill[0], to_fill[1]):
-                random_number = random.random()
-                if random_number < self.settings.parameters["fl"]:
-                    fitness[i, j] = 0
-                elif (
-                    random_number
-                    < self.settings.parameters["fl"] + self.settings.parameters["fn"]
-                ):
-                    fitness[i, j] = 1
-                elif (
-                    random_number
-                    < self.settings.parameters["fl"]
-                    + self.settings.parameters["fn"]
-                    + self.settings.parameters["fb"]
-                ):
-                    fitness[i, j] = 1 + np.random.exponential(
-                        self.settings.parameters["lb"]
-                    )
-                else:
-                    fitness[i, j] = 1 - np.random.exponential(
-                        self.settings.parameters["ld"]
-                    )
-                if fitness[i, j] < 0:
-                    fitness[i, j] = 0
+    def _get_fitness_spikes(self):
+        seq_len = len(self.sequence)
+        fitness = np.zeros((4, seq_len))
+        for (idx, base) in enumerate(self.sequence.sequence):
+            fitness[base, idx] = 1
+        to_fill = np.where(fitness == 0)
+        n_spikes = len(self.settings.parameters["loc"])
+        for i, j in zip(*to_fill):
+            random_number = random.random()
+            prob = 0
+            for spike in range(n_spikes):
+                prob += self.settings.parameters["freq"][spike]
+                if random_number < prob:
+                    fitness[i, j] = self.settings.parameters["loc"][spike]
+                    break
+        return fitness
 
-        elif self.settings.model == "spikes":
-            n_spikes = len(self.settings.parameters["loc"])
+    def _get_fitness_lognormal(self):
+        seq_len = len(self.sequence)
+        fitness = np.zeros((4, seq_len))
+        for (idx, base) in enumerate(self.sequence.sequence):
+            fitness[base, idx] = 1
+        to_fill = np.where(fitness == 0)
+        for i, j in zip(*to_fill):
+            random_number = random.random()
+            if random_number > self.settings.parameters["fl"]:
+                fitness[i, j] = np.random.lognormal(
+                    self.settings.parameters["mu"],
+                    self.settings.parameters["sigma"],
+                )
+        if self.settings.model == "lognormal_ben_only":
+            fitness[fitness < 1] = 1
+        return fitness
 
-            for i, j in zip(to_fill[0], to_fill[1]):
-                random_number = random.random()
-                prob = 0
-                for spike in range(n_spikes):
-                    prob += self.settings.parameters["freq"][spike]
-                    if random_number < prob:
-                        fitness[i, j] = self.settings.parameters["loc"][spike]
-                        break
-        elif self.settings.model in ["lognormal", "lognormal_ben_only"]:
-            for i, j in zip(to_fill[0], to_fill[1]):
-                random_number = random.random()
-                if random_number > self.settings.parameters["fl"]:
-                    fitness[i, j] = np.random.lognormal(
-                        self.settings.parameters["mu"],
-                        self.settings.parameters["sigma"],
-                    )
-            if self.settings.model == "lognormal_ben_only":
-                fitness[fitness < 1] = 1
-        elif self.settings.model == "beta":
+    def _get_fitness_beta(self):
+        seq_len = len(self.sequence)
+        fitness = np.zeros((4, seq_len))
+        for (idx, base) in enumerate(self.sequence.sequence):
+            fitness[base, idx] = 1
+        to_fill = np.where(fitness == 0)
+        for i, j in zip(*to_fill):
             random_number = random.random()
             if random_number > self.settings.parameters["fl"]:
                 fitness[i, j] = np.random.lognormal(
                     self.settings.parameters["a"], self.settings.parameters["b"]
                 )
-        elif self.settings.model == "from_data":
-            for i, j in zip(to_fill[0], to_fill[1]):
-                index = np.random.randint(len(self.settings.parameters["values"]))
-                if self.settings.parameters["SD"][index] == 0:
-                    new_number = self.settings.parameters["values"][index]
-                else:
-                    new_number = np.random.normal(
-                        self.settings.parameters["values"][index],
-                        self.settings.parameters["SD"][index],
-                    )
-                if new_number >= 0:
-                    fitness[i, j] = new_number
-                else:
-                    fitness[i, j] = 0
+        return fitness
 
+    def _get_fitness_from_data(self):
+        seq_len = len(self.sequence)
+        fitness = np.zeros((4, seq_len))
+        for (idx, base) in enumerate(self.sequence.sequence):
+            fitness[base, idx] = 1
+        to_fill = np.where(fitness == 0)
+        for i, j in zip(*to_fill):
+            index = np.random.randint(len(self.settings.parameters["values"]))
+            if self.settings.parameters["SD"][index] == 0:
+                new_number = self.settings.parameters["values"][index]
+            else:
+                new_number = np.random.normal(
+                    self.settings.parameters["values"][index],
+                    self.settings.parameters["SD"][index],
+                )
+            if new_number >= 0:
+                fitness[i, j] = new_number
+            else:
+                fitness[i, j] = 0
         return fitness
 
     def get_fitness_effect(self, location, target_base):

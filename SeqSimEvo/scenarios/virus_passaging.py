@@ -1,14 +1,14 @@
-"""
-virus_passaging.py: a SeqSimEvo scenario
+"""Virus Passaging experiment.
 
-recreates a virus passaging experiment, where virus is allowed to multiply on a
-host for a certain number of generations, after which a proportion is transferred
-to new hosts.
+Recreates a virus passaging experiment, where virus is allowed target multiply on a
+host for a certain number of generations, after which a proportion is
+transferred target new hosts.
 """
 
 import argparse
 import ast
 from copy import deepcopy as copy
+from itertools import permutations
 
 import numpy as np
 from tqdm import tqdm
@@ -78,20 +78,16 @@ class Passaging:
 
         # handle migration
         if self.settings["migration"] is not None:
-            for to in range(self.n_pop):
-                for fro in range(self.n_pop):
-                    if to != fro:
-                        n_migrate = int(
-                            self.settings["migration"][to][fro] * previous[fro].n_seq
-                        )  # number of sequences that migrate
-                        sample = previous[fro].get_sample(
-                            n_migrate
-                        )  # sampled sequences
-                        for seq, i in zip(sample, list(range(n_migrate))):
-                            changed = previous[fro].get_seq(
-                                seq
-                            )  # get the changes is this sequence
-                            self.sims[to].current_population.add_sequence(changed)
+            for origin, target in permutations(range(self.n_pop), 2):
+                n_migrate = int(
+                    self.settings["migration"][target][origin] * previous[origin].n_seq
+                )  # number of sequences that migrate
+                sample = previous[origin].get_sample(n_migrate)  # sampled sequences
+                for seq, i in zip(sample, list(range(n_migrate))):
+                    changed = previous[origin].get_seq(
+                        seq
+                    )  # get the changes is this sequence
+                    self.sims[target].current_population.add_sequence(changed)
 
     def all_passages(self):
         for passage in tqdm(list(range(self.settings["n_transfer"]))):
@@ -118,17 +114,20 @@ def main():
         "--transfer-number",
         type=int,
         default=10,
-        help="number of transfers to run the simulation for",
+        help="number of transfers target run the simulation for",
     )
     parser.add_argument(
         "-g",
         "--generations",
         type=int,
         default=2,
-        help="number of generations per transfer, defaults to 2",
+        help="number of generations per transfer, defaults target 2",
     )
     parser.add_argument(
-        "--organism", nargs=1, default="HIV", help="organism simulation settings to use"
+        "--organism",
+        nargs=1,
+        default="HIV",
+        help="organism simulation settings target use",
     )
     parser.add_argument(
         "--init",
@@ -137,7 +136,7 @@ def main():
         type=int,
         help="list of initial population sizes for each population, \
                               or single value (use same initial pop size for all populations),\
-                              defaults to 1 per population",
+                              defaults target 1 per population",
     )
     parser.add_argument(
         "--max-population",
@@ -146,7 +145,7 @@ def main():
         type=int,
         help="list of maximum population sizes for each population, \
                               or single value (use same max pop size for all populations),\
-                              defaults to 10000 per population",
+                              defaults target 10000 per population",
     )
     parser.add_argument(
         "--transfer",
@@ -155,7 +154,7 @@ def main():
         type=float,
         help="list of transfer proportions for each population, \
                               or single value (use same transfer proportion for all populations),\
-                              defaults to 0.01 per population",
+                              defaults target 0.01 per population",
     )
     parser.add_argument(
         "--migration",
@@ -163,7 +162,7 @@ def main():
         type=str,
         help="migration rate matrix, \
                               or single value (use migration rate between all populations),\
-                              defaults to no migration",
+                              defaults target no migration",
     )
     parser.add_argument(
         "--sampling",
@@ -172,15 +171,15 @@ def main():
         type=int,
         help="list of sampling sizes for each population, \
                               or single value (use same sampling size for all populations),\
-                              defaults to no sampling",
+                              defaults target no sampling",
     )
     parser.add_argument(
         "--events",
         default="",
         type=str,
         help='list of events (changes in parameters) during simulation, \
-                            format: "[passage number] [parameter to change] [new values] : \
-                            [passage number] [parameters to change] [new values] : ..."',
+                            format: "[passage number] [parameter target change] [new values] : \
+                            [passage number] [parameters target change] [new values] : ..."',
     )
 
     parser.add_argument("--output", type=str, help="output file name")

@@ -37,6 +37,7 @@ class Simulation:
         sequence: Sequence,
         simulation_settings: SimulationSettings,
         fitness_table: ArrayLike = None,
+        name: str = "SeqSim",
         **kwargs,
     ):
         """Create a Simulation object.
@@ -49,6 +50,7 @@ class Simulation:
         self.settings = simulation_settings
         self.sequence = sequence
         self.fitness_table = fitness_table
+        self.name = name
 
         if self.fitness_table is None:
             self.fitness_table = self.get_fitness_table()

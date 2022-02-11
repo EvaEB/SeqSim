@@ -57,7 +57,6 @@ class Simulation:
             self.fitness_table = self.get_fitness_table()
 
         self.gen = 0
-        self.n_seq = self.settings.n_seq_init
 
         self.current_population = Population(
             self.sequence, int(self.settings.n_seq_init)
@@ -76,6 +75,11 @@ class Simulation:
         return np.mean(
             [self.get_sequence_fitness(i) for i in range(len(self.current_population))]
         )
+
+    @property
+    def n_seq(self):
+        """Current number of sequences in population."""
+        return len(self.current_population)
 
     def get_fitness_table(self):
         """Creates a table with random fitness.
@@ -359,8 +363,6 @@ class Simulation:
                 self.mutate_seq(new_gen, new_seq_id, seq_id)
 
         self.current_population = new_gen
-
-        self.n_seq = self.current_population.n_seq
 
         return self.current_population
 

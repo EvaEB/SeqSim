@@ -87,7 +87,6 @@ def test_simulation_new_generation():
     settings.mutation_rate = 1e-3
     seq = SeqSimEvo.Sequence.generate_sequence(seq_len=5000)
     sim = SeqSimEvo.Simulation(seq, settings)
-    sim.n_seq = -1
     old_gen = deepcopy(sim.current_population.changes)
 
     sim.new_generation()
@@ -96,4 +95,3 @@ def test_simulation_new_generation():
     assert (
         sim.current_population.changes != old_gen
     ), "this test can fail by chance. Be worried if it keeps failing."
-    assert sim.n_seq != -1

@@ -219,8 +219,8 @@ class Simulation:
     def mutate_seq(self, pop, seq_id_new, seq_id_old):
         """Mutate a sequence.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         pop : Population
             Population the sequence mutates in
         seq_id_new : int
@@ -363,12 +363,14 @@ class Simulation:
     def copy(self, n_seq=-1, **kwargs):
         """Create a copy of the simulation with settings.
 
-        **Arguments**:
-        * `name`: the name to use for the copy
-        * `n_seq`: the number of sequences to keep in the copy. -1: original state
+        Parameters
+        ----------
+        n_seq : int
+            Number of sequences to keep. Default: -1.
 
-        **Returns**:
-            a copy of the simulation in its original state
+        Returns
+        -------
+        Copy of the simulation in its original state.
         """
         if n_seq == -1:  # original state
             return Simulation(

@@ -6,38 +6,31 @@ host for a certain number of generations, after which a proportion is transferre
 to new hosts.
 """
 
-import os
-import sys
+import argparse
+import ast
 from copy import deepcopy as copy
 
-dir_path = os.path.dirname(os.path.realpath(__file__))
-dir_path_up = os.sep.join(dir_path.split(os.sep)[:-1])
-sys.path.append(dir_path_up + os.sep + "SeqSimEvo")
-from SeqSimEvo import simulation as sim
-
+import numpy as np
 from tqdm import tqdm
-import yaml
+
+from SeqSimEvo import Sequence, Simulation, SimulationSettings
 
 
-class passaging:
-    def __init__(self, sim_settings, passaging_settings):
+class Passaging:
+    """Passaging experiment."""
+
+    def __init__(self, simulation_settings, passaging_settings):
         self.settings = copy(passaging_settings)
-        main_sim = sim.Simulation(
-            copy(sim_settings), n_seq_init=max(self.settings["pop_size"])
-        )
+        sequence = Sequence.generate_sequence(simulation_settings.n_seq_init)
         self.sims = []
         self.n_pop = len(self.settings["pop_size"])
 
-        names = iter(list(range(self.n_pop)))
-        for i in range(self.n_pop):
-            self.sims.append(
-                main_sim.copy(next(names), n_seq=self.settings["pop_size"][i])
-            )
-            try:
-                self.sims[i].settings["max_pop"] = self.settings["max_pop"][i]
-            except IndexError:
-                self.sims[i].settings["max_pop"] = self.settings["max_pop"]
-        # self.output = main_sim.current_gen.to_fasta(n_seq=1, description="consensus")
+        for idx, n_pop in enumerate(self.settings["pop_size"]):
+            n_pop_settings = copy(simulation_settings)
+            n_pop_settings.name = str(idx)
+            n_pop_settings.n_seq_init = n_pop
+            self.sims.append(Simulation(copy(sequence), n_pop_settings))
+
         self.output = ""
         self.cur_passage = 0
 
@@ -62,30 +55,29 @@ class passaging:
         for pop, i in zip(self.sims, list(range(self.n_pop))):
             # keep previous generation for migration
             if self.settings["migration"] is not None:
-                previous.append(pop.current_gen)
+                previous.append(pop.current_population)
 
             # sample
-            self.output += pop.current_gen.to_fasta(
+            self.output += pop.current_population.to_fasta(
                 n_seq=self.settings["sampling"][i],
                 description="-pop{}-gen{} ".format(i, self.cur_passage),
             )
 
             # change parameters for transfer
             if "transfer_amount" in self.settings:
-                pop.settings["max_pop"] = self.settings["transfer_amount"]
+                pop.settings.max_pop = self.settings["transfer_amount"]
             else:
-                pop.settings["max_pop"] = (
-                    self.settings["transfer_prop"] * pop.current_gen.n_seq
+                pop.settings.max_pop = (
+                    self.settings["transfer_prop"] * pop.current_population.n_seq
                 )
             pop.new_generation()
             try:
-                pop.settings["max_pop"] = self.settings["max_pop"][i]
+                pop.settings.max_pop = self.settings["max_pop"][i]
             except IndexError:
-                pop.settings["max_pop"] = self.settings["max_pop"]
+                pop.settings.max_pop = self.settings["max_pop"]
 
         # handle migration
         if self.settings["migration"] is not None:
-            changed_index = []
             for to in range(self.n_pop):
                 for fro in range(self.n_pop):
                     if to != fro:
@@ -99,7 +91,7 @@ class passaging:
                             changed = previous[fro].get_seq(
                                 seq
                             )  # get the changes is this sequence
-                            self.sims[to].current_gen.add_sequence(changed)
+                            self.sims[to].current_population.add_sequence(changed)
 
     def all_passages(self):
         for passage in tqdm(list(range(self.settings["n_transfer"]))):
@@ -107,7 +99,7 @@ class passaging:
 
 
 def run(scenario_settings, organism_settings):
-    passaging_run = passaging(organism_settings, scenario_settings)
+    passaging_run = Passaging(organism_settings, scenario_settings)
     passaging_run.all_passages()
     fasta = passaging_run.output
     if len(fasta) < 6000:
@@ -116,10 +108,7 @@ def run(scenario_settings, organism_settings):
 
 
 def main():
-    import argparse
-    import numpy as np
-    import ast
-
+    """Entry point for virus passaging."""
     # parse command line arguments
     parser = argparse.ArgumentParser(
         description="simulation of a virus passaging experiment"
@@ -229,7 +218,8 @@ def main():
     settings["events"] = events
 
     # run scenario
-    out = run(settings, args.organism)
+    simulation_settings = SimulationSettings.from_preset(args.organism)
+    out = run(settings, simulation_settings)
     if args.output:
         with open(args.output, "w") as fd:
             fd.write(out)

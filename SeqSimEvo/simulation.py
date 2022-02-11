@@ -289,7 +289,6 @@ class Simulation:
         -------
         Return True if the sequence did mutate and False if it did not.
         """
-        # get the number of mutations that will take place
         mutation_count = self._get_mutation_count()
 
         if mutation_count <= 0:
@@ -325,7 +324,11 @@ class Simulation:
 
         return True
 
-    def subsample_population(self, weights):
+    def generate_offspring(self):
+        """Generate offspring counts for all sequences."""
+        return [self.get_offspring_count(fitness) for fitness in self.fitnesses]
+
+    def subsample_population(self, weights, sort=True):
         """Subsample the amplified population."""
         pop_size = sum(weights)
         target_size = self.settings.max_pop
@@ -336,13 +339,16 @@ class Simulation:
         if pop_size <= target_size:
             return [i for i, j in enumerate(weights) for k in range(j)]
 
-        return sorted(
-            np.random.choice(
-                list(range(self.current_population.n_seq)),
-                size=int(target_size),
-                p=np.array(weights, dtype=float) / sum(weights),
-            )
+        sample = np.random.choice(
+            list(range(self.current_population.n_seq)),
+            size=int(target_size),
+            p=np.array(weights, dtype=float) / sum(weights),
         )
+
+        if sort:
+            sample = sorted(sample)
+
+        return sample
 
     def population_from_offspring(self, offspring):
         """Generate population from offspring."""
@@ -370,7 +376,7 @@ class Simulation:
         -------
         The new Population
         """
-        weights = [self.get_offspring_count(fitness) for fitness in self.fitnesses]
+        weights = self.generate_offspring()
         offspring = self.subsample_population(weights)
 
         self.gen += 1
@@ -429,18 +435,17 @@ class Simulation:
                 fitness_table=self.fitness_table,
                 **kwargs,
             )
-        else:
-            simcopy = Simulation(
-                self.sequence,
-                deepcopy(self.settings),
-                fitness_table=self.fitness_table,
-                n_seq_init=n_seq,
-                **kwargs,
-            )
-            sample = self.current_population.get_sample(n_seq)
-            for i, s in enumerate(sample):
-                changes = self.current_population.get_seq(s)
-                if changes is not None:
-                    for c in changes:
-                        simcopy.current_population.add_change(i, c[0], c[1])
-            return simcopy
+        new_simulation = Simulation(
+            self.sequence,
+            deepcopy(self.settings),
+            fitness_table=self.fitness_table,
+            n_seq_init=n_seq,
+            **kwargs,
+        )
+        sample = self.current_population.get_sample(n_seq)
+        for i, s in enumerate(sample):
+            changes = self.current_population.get_seq(s)
+            if changes is not None:
+                for c in changes:
+                    new_simulation.current_population.add_change(i, c[0], c[1])
+        return new_simulation

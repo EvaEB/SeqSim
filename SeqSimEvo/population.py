@@ -1,6 +1,7 @@
 """Population core class."""
 
 import random
+import math
 
 from copy import deepcopy, copy
 from collections import Counter
@@ -73,6 +74,26 @@ class Population:
             for seq_id in range(population.n_seq):
                 new_population.add_sequence(population.get_seq(seq_id))
         return new_population
+
+    def split(self, ratios: list):
+        """Split Population into segments."""
+        if not math.isclose(sum(ratios), 1.0):
+            raise ValueError("Ratios need to sum to one.")
+        sizes = [int(ratio * self.n_seq) for ratio in ratios]
+        if sum(sizes) > self.n_seq:
+            sizes[-1] -= 1
+        if sum(sizes) < self.n_seq:
+            sizes[-1] += 1
+        seq_id = 0
+        populations = []
+        for size in sizes:
+            population = Population(self.sequence, 0)
+            for _ in range(size):
+                population.add_sequence(self.get_seq(seq_id))
+                seq_id += 1
+            populations.append(population)
+        return populations
+
 
     def copy(self):
         """Create a deep copy of the population"""

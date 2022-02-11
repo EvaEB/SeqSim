@@ -77,8 +77,7 @@ class Population:
 
     def split(self, ratios: list):
         """Split Population into segments."""
-        if not math.isclose(sum(ratios), 1.0):
-            raise ValueError("Ratios need to sum to one.")
+        ratios = np.array(ratios) / sum(ratios)
         sizes = [int(ratio * self.n_seq) for ratio in ratios]
         if sum(sizes) > self.n_seq:
             sizes[-1] -= 1
@@ -93,7 +92,6 @@ class Population:
                 seq_id += 1
             populations.append(population)
         return populations
-
 
     def copy(self):
         """Create a deep copy of the population"""

@@ -25,6 +25,8 @@ class Simulation:
         Table with fitness values for all possible bases in the sequence.
     generation : int
         Current generation.
+    fitnesses : list
+        Fitnesses of the current population.
     average_fitness : int
         Average fitness of the population.
     effective_population : int
@@ -70,11 +72,16 @@ class Simulation:
         return len(self.current_population)
 
     @property
+    def fitnesses(self):
+        """Fitnesses of the current population."""
+        return [
+            self.get_sequence_fitness(i) for i in range(len(self.current_population))
+        ]
+
+    @property
     def average_fitness(self):
         """Average fitness of current population."""
-        return np.mean(
-            [self.get_sequence_fitness(i) for i in range(len(self.current_population))]
-        )
+        return np.mean(self.fitnesses)
 
     @property
     def n_seq(self):
@@ -318,7 +325,37 @@ class Simulation:
 
         return True
 
-    def new_generation(self, new_gen=None):
+    def subsample_population(self, weights):
+        """Subsample the amplified population."""
+        pop_size = sum(weights)
+        target_size = self.settings.max_pop
+
+        if self.settings.dilution > 0:
+            target_size = min(pop_size * self.settings.dilution, self.settings.max_pop)
+
+        if pop_size <= target_size:
+            return [i for i, j in enumerate(weights) for k in range(j)]
+
+        return sorted(
+            np.random.choice(
+                list(range(self.current_population.n_seq)),
+                size=int(target_size),
+                p=np.array(weights, dtype=float) / sum(weights),
+            )
+        )
+
+    def population_from_offspring(self, offspring):
+        """Generate population from offspring."""
+        new_population = Population(self.sequence, n_seq=0)
+        offspring_counter = Counter(offspring)
+        for seq_id, count in offspring_counter.items():
+            changes = self.current_population.get_seq(seq_id)
+            for _ in range(count):
+                new_seq_id = new_population.add_sequence(changes=changes)
+                self.mutate_seq(new_population, new_seq_id, seq_id)
+        return new_population
+
+    def new_generation(self):
         """Create a new generation in the simulation.
 
         Updates state of the simulation.
@@ -333,42 +370,11 @@ class Simulation:
         -------
         The new Population
         """
+        weights = [self.get_offspring_count(fitness) for fitness in self.fitnesses]
+        offspring = self.subsample_population(weights)
+
         self.gen += 1
-        if new_gen is None:
-            new_gen = Population(self.sequence, n_seq=0)
-        all_offspring = []
-
-        fitnesses = [
-            self.get_sequence_fitness(i) for i in range(len(self.current_population))
-        ]
-        weights = [self.get_offspring_count(fitness) for fitness in fitnesses]
-
-        pop_size = sum(weights)
-        target_size = self.settings.max_pop
-
-        if self.settings.dilution > 0:
-            target_size = min(pop_size * self.settings.dilution, self.settings.max_pop)
-
-        if pop_size > target_size:
-            # reduce the population randomly to max_pop
-            all_offspring = sorted(
-                np.random.choice(
-                    list(range(self.current_population.n_seq)),
-                    size=int(target_size),
-                    p=np.array(weights, dtype=float) / sum(weights),
-                )
-            )
-        else:
-            all_offspring = [i for i, j in enumerate(weights) for k in range(j)]
-
-        offspring_counter = Counter(all_offspring)
-        for seq_id, count in offspring_counter.items():
-            changes = self.current_population.get_seq(seq_id)
-            for _ in range(count):
-                new_seq_id = new_gen.add_sequence(changes=changes)
-                self.mutate_seq(new_gen, new_seq_id, seq_id)
-
-        self.current_population = new_gen
+        self.current_population = self.population_from_offspring(offspring)
 
         return self.current_population
 

@@ -1,4 +1,5 @@
 from .simulation import Simulation
+from .simulation_settings import SimulationSettings
 from .sequence import Sequence
 from .population import Population
 

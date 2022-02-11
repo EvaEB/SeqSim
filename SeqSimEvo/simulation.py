@@ -1,8 +1,4 @@
-"""
-Created on Thu Dec 15 13:42:33 2016
-
-@author: eva
-"""
+"""Simulation core class."""
 
 import random
 from dataclasses import dataclass
@@ -13,29 +9,7 @@ from numpy.typing import ArrayLike
 
 from .sequence import Sequence
 from .population import Population
-
-
-@dataclass
-class SimulationSettings:
-    """Simulation settings."""
-
-    model: str
-    parameters: dict
-    offspring_distribution: str
-
-    mutation_rate: float
-    subs_matrix: ArrayLike
-
-    seq_len: int
-    base_dist: list
-
-    n_seq_init: bool
-    basic_reproductive_number: float
-    ga_increase: bool
-    max_pop: int
-    name: str
-
-    offspring_sigma: float = 0
+from .simulation_settings import SimulationSettings
 
 
 class Simulation:
@@ -56,34 +30,6 @@ class Simulation:
         Effective population size of the current population
     n_seq : int
         Total number of sequences in the current population
-
-    **Arguments**:
-    * `simulation_settings` (str): either one of the default simulation
-    settings (HIV (default), phix174), or a path to a settings file
-    in yaml-format
-
-    **note**: loaded simulation settings will be overwritten by parameters
-        provided as keyword arguments
-
-    **Keyword Arguments**:
-    * `model` (str): model to use for the MFED (otions: 'neutral'(default),
-    'lognormal','exponential','spikes','beta', 'from_data','steps')
-    * `parameters` (dict): parameters for the MFED
-    * `mut_rate` (float): mutation rate per site per generation (default = 2.16e-5)
-    * `subs_matrix` (4x4 list): cumulative substitution matrix
-    rows = from, columns = to
-    * `seq_len` (int): length of sequence to simulate (default 2600).
-    used only if no sequence is provided
-    * `basedist` (4x1 list): list of cumulutive distribution of bases used
-    for generating the sequence in order [A,G,T,C]. default: [0.25,0.5,0.75,1]
-    * `R0` (float): initial average amount of offspring per sequence
-    * `ga_increase` (float): Increase in G-A mutation rate (defaul: 1 (no increase))
-    * `max_pop` (int): maximum population size
-    * `name` (str): name of the simulation (used in output)
-    * `sequence` (Seq): the sequence to use for the simulation
-    * `fitness_table` (4xseq_len): fitness table to use for the simulation
-    * `n_seq_init` (int): initial number of sequences (default 1)
-
     """
 
     def __init__(
@@ -93,50 +39,26 @@ class Simulation:
         fitness_table: ArrayLike = None,
         **kwargs,
     ):
-        """
-        create a Simulation object.
+        """Create a Simulation object.
 
-        Arguments:
-            simulation_settings (str): either one of the default simulation
-                settings (HIV (default), phix174), or a path to a settings file
-                in yaml-format
-
-        **note**: loaded simulation settings will be overwritten by parameters
-            provided as keyword arguments
-
-        Keyword Arguments:
-            model (str): model to use for the MFED (options: 'neutral'(default),
-                'lognormal','exponential','spikes','beta', 'from_data','steps',
-                'lognormal_ben_only')
-            parameters (dict): parameters for the MFED
-            mut_rate (float): mutation rate per site per generation (default = 2.16e-5)
-            subs_matrix (4x4 list): cumulative substitution matrix
-                rows = from, columns = to
-            seq_len (int): length of sequence to simulate (default 2600).
-                used only if no sequence is provided
-            basedist (4x1 list): list of cumulative distribution of bases used
-                for generating the sequence in order [A,G,T,C]. default: [0.25,0.5,0.75,1]
-            R0 (float): initial average amount of offspring per sequence
-            ga_increase (float): Increase in G-A mutation rate (defaul: 1 (no increase))
-            max_pop (int): maximum population size
-            name (str): name of the simulation (used in output)
-            sequence (Seq): the sequence to use for the simulation
-            fitness_table (4xseq_len): fitness table to use for the simulation
-            n_seq_init (int): initial number of sequences (default 1)
+        Parameters
+        ----------
+        simulation_settings : SimulationSettings
+            Settings for the simulation.
         """
         self.settings = simulation_settings
         self.sequence = sequence
         self.fitness_table = fitness_table
 
         if self.fitness_table is None:
-            self.fitness_table = self.get_fitness_table
+            self.fitness_table = self.get_fitness_table()
 
         self.gen = 0
         self.average_fitness = 1
         self.n_seq = self.settings.n_seq_init
 
         self.current_population = Population(
-            self.sequence, self, n_seq=int(self.settings.n_seq_init)
+            self.sequence, int(self.settings.n_seq_init)
         )
 
         self._future_mutation_counts = None
@@ -292,7 +214,7 @@ class Simulation:
             raise ValueError(
                 f"Offspring distribution {self.settings.offspring_distribution} unknown."
             )
-        return offspring, fitness
+        return offspring
 
     def mutate_seq(self, pop, seq_id_new, seq_id_old):
         """Mutate a sequence.
@@ -361,7 +283,7 @@ class Simulation:
         """
         self.gen += 1
         if new_gen is None:
-            new_gen = Population(self.sequence, self, n_seq=0)
+            new_gen = Population(self.sequence, n_seq=0)
         all_offspring = []
 
         # will hold the fitness values for all sequences

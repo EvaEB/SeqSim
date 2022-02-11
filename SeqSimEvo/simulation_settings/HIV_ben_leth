@@ -7,7 +7,7 @@ parameters:
 offspring_distribution: 'poisson'
 
 #settings for new mutations
-mut_rate: 2.16e-5
+mutation_rate: 2.16e-5
 subs_matrix: [[0.54505451, 0.79257926, 0.90629063, 1.],
               [0.38363836, 0.81938194, 0.90849085, 1.],
               [0.21922192, 0.33003300, 0.75747575, 1.],
@@ -15,11 +15,11 @@ subs_matrix: [[0.54505451, 0.79257926, 0.90629063, 1.],
 
 #sequence settings
 seq_len: 2600
-basedist: [ 0.37,  0.61,  0.8 ,  1] #A,G,T,C
+base_dist: [ 0.37,  0.61,  0.8 ,  1] #A,G,T,C
 
 #simulation settings
 n_seq_init: 1
-R0: 6
+basic_reproductive_number: 6
 ga_increase: 1
 max_pop: 10000
 name: 'HIV'

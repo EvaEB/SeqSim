@@ -31,7 +31,7 @@ parameters:
 offspring_distribution: 'poisson'
 
 #settings for new mutations
-mut_rate: 1.0e-6
+mutation_rate: 1.0e-6
          #to   A     G     T     C      from
 subs_matrix: [[0.25, 0.50, 0.75, 1.],   #A
               [0.25, 0.50, 0.75, 1.],   #G
@@ -40,11 +40,11 @@ subs_matrix: [[0.25, 0.50, 0.75, 1.],   #A
 
 #sequence settings
 seq_len: 5386
-basedist: [0.24,0.47,0.79,1] #A,G,T,C
+base_dist: [0.24,0.47,0.79,1] #A,G,T,C
 
 #simulation settings
 n_seq_init: 1000000
-R0: 100
+basic_reproductive_number: 100
 ga_increase: 1
 max_pop: 1000000 #0.8e+9
 name: 'phiX174'

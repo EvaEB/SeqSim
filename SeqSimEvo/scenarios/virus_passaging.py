@@ -20,6 +20,7 @@ class Passaging:
     """Passaging experiment."""
 
     def __init__(self, simulation_settings, passaging_settings):
+        """Init passaging."""
         self.settings = copy(passaging_settings)
         sequence = Sequence.generate_sequence(simulation_settings.n_seq_init)
         self.sims = []
@@ -35,6 +36,7 @@ class Passaging:
         self.cur_passage = 0
 
     def next_passage(self):
+        """Next passage."""
         self.cur_passage += 1
         # handle events
         while self.cur_passage in self.settings["events"][0]:
@@ -46,7 +48,7 @@ class Passaging:
             del self.settings["events"][1][loc]
             del self.settings["events"][2][loc]
 
-        for gen in range(self.settings["n_gen_per_transfer"] - 1):
+        for _ in range(self.settings["n_gen_per_transfer"] - 1):
             for pop in self.sims:
                 pop.new_generation()
 
@@ -60,7 +62,7 @@ class Passaging:
             # sample
             self.output += pop.current_population.to_fasta(
                 n_seq=self.settings["sampling"][i],
-                description="-pop{}-gen{} ".format(i, self.cur_passage),
+                description=f"-pop{i}-gen{self.cur_passage}",
             )
 
             # change parameters for transfer
@@ -90,11 +92,13 @@ class Passaging:
                     self.sims[target].current_population.add_sequence(changed)
 
     def all_passages(self):
-        for passage in tqdm(list(range(self.settings["n_transfer"]))):
+        """Do all passages."""
+        for _ in tqdm(list(range(self.settings["n_transfer"]))):
             self.next_passage()
 
 
 def run(scenario_settings, organism_settings):
+    """Run."""
     passaging_run = Passaging(organism_settings, scenario_settings)
     passaging_run.all_passages()
     fasta = passaging_run.output

@@ -38,7 +38,7 @@ class SimulationSettings:
             self.subs_matrix = np.array(self.subs_matrix)
 
     @classmethod
-    def from_preset(cls, name: str):
+    def from_preset(cls, name: str, **kwargs):
         """Create settings from preset."""
         preset_path = resource_filename("SeqSimEvo", "simulation_settings/")
         try:
@@ -46,9 +46,9 @@ class SimulationSettings:
                 settings = yaml.safe_load(preset_file)
         except FileNotFoundError as err:
             raise FileNotFoundError(f"Preset {name} does not exist.") from err
-        return cls.from_dict(settings)
+        return cls.from_dict(settings, **kwargs)
 
     @classmethod
-    def from_dict(cls, settings: dict):
+    def from_dict(cls, settings: dict, **kwargs):
         """Create settings from dict."""
-        return cls(**settings)
+        return cls(**settings, **kwargs)

@@ -6,9 +6,9 @@ parameters:
     lb: 0.03    #exponential
     fd: 0.51    #exponential
     ld: 0.21    #exponential
-#    fn:        #exponential
+    fn: 0.0       #exponential
 #    mu:     #lognormal
-    sigma:  #lognormal
+#    sigma:  #lognormal
     loc: [ 0. ,  0.1,  0.2,  0.3,  0.4,  0.5,  0.6,  0.7,  0.8,  0.9,  1. ,1.1]
     freq: [0.2, 0.021538461538461541, 0.0, 0.021538461538461541, 0.0,
            0.021538461538461541,0.021538461538461541,0.067692307692307704,

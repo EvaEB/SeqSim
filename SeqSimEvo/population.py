@@ -65,7 +65,7 @@ class Population:
     @classmethod
     def merge(cls, *populations):
         """Merge a list of populations."""
-        sequence = populations[0]
+        sequence = populations[0].sequence
         if not all(sequence == population.sequence for population in populations):
             raise ValueError("Can only merge Populations with same reference sequence.")
 

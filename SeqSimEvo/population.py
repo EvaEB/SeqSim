@@ -1,13 +1,14 @@
 """Population core class."""
 
 import random
-import math
 
 from copy import deepcopy, copy
 from collections import Counter
 
 import numpy as np
 import scipy as sp
+
+from numpy.typing import ArrayLike
 
 from .sequence import Sequence
 
@@ -27,40 +28,27 @@ class Population:
         Number of sequences in the population
     """
 
-    def __init__(
-        self,
-        sequence: Sequence,
-        n_seq: int,
-        changes: dict = None,
-        changed: set = None,
-        **kwargs
-    ):
+    def __init__(self, sequence: Sequence, n_seq: int, changes: dict = None):
         """Initialize the Population
 
-        Arguments:
-            changes (dict): for pre-existing changes. Numpy array per sequence with
-                the position and new base per mutation
-            changed (set): for pre-existing changes: the sequence IDs that countain a mutation
-            n_seq (int): number of sequences in the population (default 1)
+        Parameters
+        ----------
+        sequence : Sequence
+        n_seq : int
+            Population size.
         """
         self.sequence = sequence
-        if changes is None:
-            self.changed = set([])
-            self.changes = {}
-        else:
-            self.changes = changes
-            for i in self.changes:
-                self.changes[i] = np.array(self.changes[i])
-            self.changed = set(changed)
         self.n_seq = n_seq
 
-    def __add__(self, other):
-        if self.sequence != other.sequence:
-            raise ValueError("Can only add Populations with same reference sequence.")
-        population = copy(self)
-        for seq_id in range(other.n_seq):
-            population.add_sequence(other.get_seq(seq_id))
-        return population
+        if changes is None:
+            changes = {}
+
+        self.changes = changes
+
+    @property
+    def changed(self):
+        """Get the mutated sequences."""
+        return set(self.changes.keys())
 
     @classmethod
     def merge(cls, *populations):
@@ -74,6 +62,14 @@ class Population:
             for seq_id in range(population.n_seq):
                 new_population.add_sequence(population.get_seq(seq_id))
         return new_population
+
+    def __add__(self, other):
+        if self.sequence != other.sequence:
+            raise ValueError("Can only add Populations with same reference sequence.")
+        population = copy(self)
+        for seq_id in range(other.n_seq):
+            population.add_sequence(other.get_seq(seq_id))
+        return population
 
     def split(self, ratios: list):
         """Split Population into segments."""
@@ -93,140 +89,81 @@ class Population:
             populations.append(population)
         return populations
 
-    def copy(self):
-        """Create a deep copy of the population"""
-        return Population(
-            sequence=self.sequence,
-            changes=deepcopy(self.changes),
-            changed=deepcopy(self.changed),
-            n_seq=self.n_seq,
-        )
+    def get_sample(self, sample_size: int):
+        """Get a random sample of the population.
 
-    def print_sample(self, seq_ids):
-        """Print a summary of the mutations that have occurred
+        If the sample size is larger than the population, the whole population
+        is returned.
 
-        Prints a summary of the mutations that have occurred in all seq_ids in
-        the format: #mutID (from-pos-to)\tsequence\tpatient\n
+        Paramters
+        ---------
+        sample_size : int
 
-        **Arguments**:
-        * `seq_ids` (list): the ids of the sequences to print a summary of
-
-        **Returns**:
-        Nothing. Output is printed to stdout.
+        Returns
+        -------
+        list
+            List of randomly selected sample sequence ids.
         """
-        if any(np.array(seq_ids) > self.n_seq):
-            raise IndexError("seqID out of range")
-        string = "#mutID (from-pos-to)\tsequence\tpatient\n"
-        for i in range(self.n_seq):
-            if i in self.changed and i in seq_ids:
-                for j in self.changes[i]:
-                    pos = j[0]
-                    string += "{orig}-{pos}-{to}\t{seq}\t\n".format(
-                        orig=self.sequence[pos],
-                        pos=pos,
-                        to=self.sequence.translation[j[1]],
-                        seq=i,
-                    )
-        print(string)
-
-    def sample_to_string(self, seq_ids):
-        """create a summary of the mutations that have occured
-
-        **Arguments**:
-        * `seq_ids` (list): the ids of the sequences to print a summary of
-
-        **Returns**:
-        * `string`: summary of the mutations that have occured in the seq_ids,
-        in the format "#mutID (from-pos-to)\tsequence\tpatient"
-
-        """
-        string = "#mutID (from-pos-to)\tsequence\tpatient\n"
-        for i in range(self.n_seq):
-            if i in self.changed and i in seq_ids:
-                for j in self.changes[i]:
-                    pos = j[0]
-                    string += "{orig}-{pos}-{to}\t{seq}\t\n".format(
-                        orig=self.sequence[pos],
-                        pos=pos,
-                        to=self.sequence.translation[j[1]],
-                        seq=i,
-                    )
-        return string
-
-    def get_sample(self, sample_size):
-        """get a random sample from the population
-        If the sample size is larger than the population, the whole population is
-        returned
-
-        **Arguments**:
-        * `sample_size` (int): the size of the sample
-
-        **Returns**:
-            a list of sequence IDs randomly sampled from the population
-        """
-        try:
-            return np.random.choice(self.n_seq, size=int(sample_size), replace=False)
-        except ValueError:
+        if sample_size >= self.n_seq:
             return list(range(self.n_seq))
+        return np.random.choice(self.n_seq, size=int(sample_size), replace=False)
 
-    def delete_sequence(self, ID):
-        """delete sequence from the population.
-        Sequence IDs will be reassigned to fit within the new number of sequences.
+    def add_sequence(self, changes: ArrayLike = None):
+        """Add sequence to the population.
 
-        **Arguments**:
-        * `ID` (int): the sequence ID of the sequence to remove
+        Parameters
+        ----------
+        changes : ArrayLike
+            Array with mutations contained in the sequence.
 
-        **Returns**:
-        nothing. Sequence is removed in-place.
-        """
-        self.n_seq -= 1
-        if self.get_seq(ID) is not None:
-            self.changed.remove(ID)
-            del self.changes[ID]
-
-        if self.get_seq(self.n_seq) is not None:
-            self.changed.remove(self.n_seq)
-            self.changed.add(ID)
-
-            self.changes[ID] = self.changes[self.n_seq]
-            del self.changes[self.n_seq]
-
-    def add_sequence(self, changes=None):
-        """add a sequence to the population
-
-        add a sequence, optionally with certain changes (as a list of position, new), to the population
-
-        **Arguments**:
-        * `changes`: the changes present in this sequence
-
-        **Returns**:
-        the sequence ID of the newly added sequence
+        Returns
+        -------
+        int
+            Sequence id of the newly added sequence.
         """
         self.n_seq += 1
         if changes is not None:
             for i in changes:
                 self.add_change(self.n_seq - 1, i[0], i[1])
-
         return self.n_seq - 1
 
-    def add_change(self, seq_id, pos, target):
-        """add a change to an existing sequence
+    def delete_sequence(self, seq_id: int):
+        """Delete a sequence from the population.
 
-        **Arguments**:
-        * `seq_id` (int): the sequence ID to add the change to
-        * `pos` (int): the position of the change
-        * `target` (int): the new base at the changed position
+        Sequence ids will be reassigned.
 
-        **Returns**:
-            Nothing. Population is changed in-place.
+        Parameters
+        ----------
+        seq_id : int
+        """
+        self.n_seq -= 1
+        if self.get_seq(seq_id) is not None:
+            self.changed.remove(seq_id)
+            del self.changes[seq_id]
+
+        if self.get_seq(self.n_seq) is not None:
+            self.changed.remove(self.n_seq)
+            self.changed.add(seq_id)
+
+            self.changes[seq_id] = self.changes[self.n_seq]
+            del self.changes[self.n_seq]
+
+    def add_change(self, seq_id: int, pos: int, target: int):
+        """Add a change to an existing sequence.
+
+        Parameters
+        ----------
+        seq_id : int
+        pos : int
+            Position of the change.
+        target : int
+            Target base.
         """
         if pos > len(self.sequence):
-            raise IndexError("Pos {} outside sequence length".format(pos))
+            raise IndexError(f"{pos=} is outsite of sequence length.")
 
         if seq_id > self.n_seq:
-            raise IndexError(
-                "SeqID {} outside pop size {} {}".format(seq_id, self.n_seq, self)
-            )
+            raise IndexError(f"{seq_id=} is not in the population.")
 
         if seq_id in self.changed:
             # add to existing changes list
@@ -239,24 +176,32 @@ class Population:
             self.changed.add(seq_id)
             self.changes[seq_id] = np.array([[pos, target]])
 
-    def get_base(self, seq_id, pos):
-        """get the current base at position pos in sequence with id seq_id"""
+    def get_base(self, seq_id: int, pos: int):
+        """Get specific base for a sequence.
+
+        Parameters
+        ----------
+        seq_id : int
+        pos : int
+        """
         if seq_id in self.changed:
             if pos in self.changes[seq_id][:, 0]:
                 return self.changes[seq_id][self.changes[seq_id][:, 0] == pos, 1]
         return self.sequence.sequence[pos]
 
     def stats(self):
-        """return a dict of stats about the population
+        """Get stats for the population.
 
-        **Keys in the returned dict:**
-        * `n_seq`: the total number of sequences in the current generation
-        * `unmutated`: the number of unmutated sequences
-        * `total_mutations`: the number of mutations in total
-        * `unique_mutations`: the length of the set of all mutations
-        * `majority_mutations`: the number of mutations that reached majority
-        * `max_fraction`: the highest fraction reached by a mutation
-        * `GA_rate`: the fraction of mutations that are G-to-A
+        Returns
+        -------
+        dict
+            * `n_seq`: the total number of sequences in the current generation
+            * `unmutated`: the number of unmutated sequences
+            * `total_mutations`: the number of mutations in total
+            * `unique_mutations`: the length of the set of all mutations
+            * `majority_mutations`: the number of mutations that reached majority
+            * `max_fraction`: the highest fraction reached by a mutation
+            * `GA_rate`: the fraction of mutations that are G-to-A
         """
         stats = {}
         stats["n_seq"] = self.n_seq
@@ -279,31 +224,36 @@ class Population:
         else:
             stats["majority_mutations"] = 0
             stats["max_fraction"] = 0
-        GA = 0
+        ga = 0
         for i in all_mutations:
             if self.sequence[i[0]] == 1 and i[1] == 0:
-                GA += 1.0
+                ga += 1.0
         try:
-            stats["GA_rate"] = GA / len(all_mutations)
+            stats["GA_rate"] = ga / len(all_mutations)
         except ZeroDivisionError:
             stats["GA_rate"] = None
         return stats
 
-    def to_fasta(self, seq_ids=None, n_seq=None, description="", progress=False):
+    def to_fasta(self, seq_ids=None, n_seq=None, description=""):
         """Convert (part of) the population to fasta-format.
 
         Without any arguments, all sequences in the population will be returned.
 
-        **Optional arguments**:
-        * `seq_ids` (list): list of sequence IDs to convert to fasta-format
-        * `n_seq`: number of sequences to convert to fasta-format (random draw
-        from population). This number will be ignored if seq_ids is given
-        * `description` (str): description of the sequences, will be added after
-        the sequenceID in the header of each sequence
-        * `progress` (Bool): display a progress bar?
+        Parameters
+        ----------
+        seq_ids : list
+            List of sequence ids to include.
+        n_seq : int
+            Number of sequences to convert to fasta-format. Drawn at random.
+            Will be ignored if `seq_ids` is not None.
+        description : str
+            Description of the sequences will be added after the sequence id
+            in the name of each sequence.
 
-        **Returns**:
-            str: the selected sequences in fasta-format
+        Returns
+        -------
+        str
+            Selected sequences in fasta-format.
         """
         if seq_ids is None:
             seq_ids = []
@@ -311,16 +261,15 @@ class Population:
         if len(seq_ids) == 0:
             if n_seq is None or n_seq > self.n_seq:
                 n_seq = self.n_seq
-
             seq_ids = random.sample(list(range(self.n_seq)), n_seq)
-        for i in range(len(seq_ids)):
-            seqID = seq_ids[i]
-            string += ">" + str(seqID) + "" + str(description) + "\n"
-            changed_here = self.get_seq(seqID)
+
+        for seq_id in seq_ids:
+            string += ">" + str(seq_id) + "" + str(description) + "\n"
+            changed_here = self.get_seq(seq_id)
             seq = deepcopy(self.sequence)
             if changed_here is not None:
-                for i in changed_here:
-                    seq.sequence[int(i[0])] = int(i[1])
+                for pos, base in changed_here:
+                    seq.sequence[int(pos)] = int(base)
             string += str(seq) + "\n"
         return string
 
@@ -352,8 +301,8 @@ class Population:
             return None
 
     def hamming_distance(self, sample, simulation_settings, action="mean"):
-        """
-        calculate the inter-sequence hamming distances in a sample.
+        """Calculate the inter-sequence hamming distances in a sample.
+
         if action is 'mean', return the mean hamming distance,
         if action is 'Poisson_fit', return the poisson fit for the time since
             infection from the distribution of hamming distances as presented
@@ -388,19 +337,50 @@ class Population:
             else:
                 return np.nan
 
+    def print_sample(self, seq_ids: list):
+        """Print a summary of the mutations that have occurred
+
+        Prints a summary of the mutations that have occurred in all seq_ids in
+        the format: #mutID (from-pos-to)\tsequence\tpatient\n
+
+        Parameters
+        ----------
+        seq_ids : list
+            List of sequences to print a summary of.
+        """
+        print(self.print_string(seq_ids))
+
+    def print_string(self, seq_ids: list):
+        """Create a summary of the mutations that have occurred.
+
+        Parameters
+        ----------
+        seq_ids : list
+            List of sequences to print a summary of.
+
+        Returns
+        -------
+        string
+            Summary of the mutations that have occurred in `seq_ids`, in format
+            `#mutID (from-pos-to)\\tsequence\\tpatient`
+        """
+        string = "#mutID (from-pos-to)\tsequence\tpatient\n"
+        for i in sorted(seq_ids):
+            if i in self.changed:
+                for pos, base in self.changes[i]:
+                    string += f"{self.sequence[pos]}-{pos}-{base}\t{i}\n"
+        return string
+
+    def copy(self):
+        """Create a deep copy of the population"""
+        return Population(
+            sequence=self.sequence,
+            n_seq=self.n_seq,
+            changes=deepcopy(self.changes),
+        )
+
     def __len__(self):
         return self.n_seq
 
     def __str__(self):
-        string = "#mutID (from-pos-to)\tsequence\tpatient\n"
-        for i in range(self.n_seq):
-            if i in self.changed:
-                for j in self.changes[i]:
-                    pos = j[0]
-                    string += "{orig}-{pos}-{to}\t{seq}\t\n".format(
-                        orig=self.sequence[pos],
-                        pos=pos,
-                        to=self.sequence.translation[j[1]],
-                        seq=i,
-                    )
-        return string
+        return self.print_string(range(self.n_seq))

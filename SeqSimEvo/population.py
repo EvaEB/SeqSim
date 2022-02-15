@@ -20,12 +20,12 @@ class Population:
     ----------
     sequence : Sequence
         Reference sequence
-    changed : set
-        Sequence ids that contain mutations
-    changes : dict
-        Maps sequence ids to an array that stores all mutations
     n_seq : int
         Number of sequences in the population
+    changes : dict
+        Maps sequence ids to an array that stores all mutations
+    changed : set
+        Sequence ids that contain mutations
     """
 
     def __init__(self, sequence: Sequence, n_seq: int, changes: dict = None):
@@ -41,7 +41,7 @@ class Population:
         self.n_seq = n_seq
 
         if changes is None:
-            changes = {}
+            changes = np.empty(n_seq, dtype=object)
 
         self.changes = changes
 
@@ -57,10 +57,14 @@ class Population:
         if not all(sequence == population.sequence for population in populations):
             raise ValueError("Can only merge Populations with same reference sequence.")
 
-        new_population = cls(sequence, 0)
+        n_seq = [len(pop) for pop in populations]
+        new_population = cls(sequence, n_seq)
+        seq_id = 0
         for population in populations:
-            for seq_id in range(population.n_seq):
-                new_population.add_sequence(population.get_seq(seq_id))
+            new_population.changes[
+                seq_id : seq_id + len(population)
+            ] = population.changes[:]
+            seq_id += len(population)
         return new_population
 
     def __add__(self, other):
@@ -82,10 +86,10 @@ class Population:
         seq_id = 0
         populations = []
         for size in sizes:
-            population = Population(self.sequence, 0)
-            for _ in range(size):
-                population.add_sequence(self.get_seq(seq_id))
-                seq_id += 1
+            population = Population(
+                self.sequence, size, changes=self.changes[seq_id : seq_id + size]
+            )
+            seq_id += size
             populations.append(population)
         return populations
 
@@ -148,6 +152,10 @@ class Population:
             self.changes[seq_id] = self.changes[self.n_seq]
             del self.changes[self.n_seq]
 
+    def set_changes(self, seq_id: int, changes: ArrayLike):
+        """Set changes for seq_id."""
+        self.changes[seq_id] = changes
+
     def add_change(self, seq_id: int, pos: int, target: int):
         """Add a change to an existing sequence.
 
@@ -165,16 +173,14 @@ class Population:
         if seq_id > self.n_seq:
             raise IndexError(f"{seq_id=} is not in the population.")
 
-        if seq_id in self.changed:
-            # add to existing changes list
-            if pos in self.changes[seq_id][:, 0]:
-                self.changes[seq_id][self.changes[seq_id][:, 0] == pos, 1] = target
-            else:
-                self.changes[seq_id] = np.vstack((self.changes[seq_id], [pos, target]))
-        else:
-            # add a new changed sequence
-            self.changed.add(seq_id)
+        if self.changes[seq_id] is None:
             self.changes[seq_id] = np.array([[pos, target]])
+            return
+
+        if pos in self.changes[seq_id][:, 0]:
+            self.changes[seq_id][self.changes[seq_id][:, 0] == pos, 1] = target
+        else:
+            self.changes[seq_id] = np.vstack((self.changes[seq_id], [pos, target]))
 
     def get_base(self, seq_id: int, pos: int):
         """Get specific base for a sequence.
@@ -184,9 +190,9 @@ class Population:
         seq_id : int
         pos : int
         """
-        if seq_id in self.changed:
-            if pos in self.changes[seq_id][:, 0]:
-                return self.changes[seq_id][self.changes[seq_id][:, 0] == pos, 1]
+        changes = self.changes[seq_id]
+        if changes is not None and pos in self.changes[seq_id][:, 0]:
+            return self.changes[seq_id][self.changes[seq_id][:, 0] == pos, 1]
         return self.sequence.sequence[pos]
 
     def stats(self):
@@ -295,10 +301,7 @@ class Population:
         if sequence_id > self.n_seq:
             raise IndexError("sequence_id is out of bounds")
 
-        if sequence_id in self.changed:
-            return self.changes[sequence_id]
-        else:
-            return None
+        return self.changes[sequence_id]
 
     def hamming_distance(self, sample, simulation_settings, action="mean"):
         """Calculate the inter-sequence hamming distances in a sample.

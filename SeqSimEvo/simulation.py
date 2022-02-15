@@ -352,13 +352,15 @@ class Simulation:
 
     def population_from_offspring(self, offspring):
         """Generate population from offspring."""
-        new_population = Population(self.sequence, n_seq=0)
+        new_population = Population(self.sequence, n_seq=len(offspring))
         offspring_counter = Counter(offspring)
+        new_seq_id = 0
         for seq_id, count in offspring_counter.items():
             changes = self.current_population.get_seq(seq_id)
             for _ in range(count):
-                new_seq_id = new_population.add_sequence(changes=changes)
+                new_population.set_changes(new_seq_id, changes)
                 self.mutate_seq(new_population, new_seq_id, seq_id)
+                new_seq_id += 1
         return new_population
 
     def new_generation(self):

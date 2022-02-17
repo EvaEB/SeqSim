@@ -57,7 +57,7 @@ class Population:
         if not all(sequence == population.sequence for population in populations):
             raise ValueError("Can only merge Populations with same reference sequence.")
 
-        n_seq = [len(pop) for pop in populations]
+        n_seq = sum([len(pop) for pop in populations])
         new_population = cls(sequence, n_seq)
         seq_id = 0
         for population in populations:

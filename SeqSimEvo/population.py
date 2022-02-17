@@ -173,14 +173,18 @@ class Population:
         if seq_id > self.n_seq:
             raise IndexError(f"{seq_id=} is not in the population.")
 
-        if self.changes[seq_id] is None:
+        changes = self.changes[seq_id]
+
+        if changes is None:
             self.changes[seq_id] = np.array([[pos, target]])
             return
 
-        if pos in self.changes[seq_id][:, 0]:
-            self.changes[seq_id][self.changes[seq_id][:, 0] == pos, 1] = target
+        if pos in changes[:, 0]:
+            changes = copy(changes)
+            changes[self.changes[seq_id][:, 0] == pos, 1] = target
+            self.changes[seq_id] = changes
         else:
-            self.changes[seq_id] = np.vstack((self.changes[seq_id], [pos, target]))
+            self.changes[seq_id] = np.vstack((changes, [pos, target]))
 
     def get_base(self, seq_id: int, pos: int):
         """Get specific base for a sequence.

@@ -1,6 +1,6 @@
 """Tests for population module."""
 import pytest
-from copy import deepcopy
+import numpy as np
 
 import SeqSimEvo
 
@@ -8,7 +8,6 @@ import SeqSimEvo
 #                                       .__len__
 #                                       .__str__
 #                                       .add_change
-#                                       .add_sequence
 #                                       .consensus_sequence
 #                                       .copy
 #                                       .delete_sequence
@@ -22,7 +21,8 @@ import SeqSimEvo
 #                                       .Hamming_distance
 
 # __init__
-def test_population_init_CORRECT():
+def test_population_init():
+    """Test population init."""
     seq = SeqSimEvo.Sequence.generate_sequence(100)
     pop = SeqSimEvo.Population(seq, 10)
     assert hasattr(pop, "changed")
@@ -70,73 +70,38 @@ def test_population_add_change_out_of_range():
         pop.add_change(50, 210, 0)
 
 
-def test_population_add_sequence():
-    """Test `add_sequence`."""
-    seq = SeqSimEvo.Sequence.generate_sequence(100)
-    pop = SeqSimEvo.Population(seq, 100)
-
-    new_change = [[10, 1], [20, 2]]
-    new = pop.add_sequence(changes=new_change)
-    assert new == 100, f"new sequence has wrong ID assigned. is {new}, should be 100"
-    assert ([10, 1] in pop.changes[new]) & (
-        [20, 2] in pop.changes[new]
-    ), f"changes weren't added correctly. is {pop.changes[new]}, should be {new_change}"
-
-
 def test_population_consensus_sequence():
     """Test `consensus_sequence`."""
     seq = SeqSimEvo.Sequence(seq="AAAA")
-    pop = SeqSimEvo.Population(seq, 10)
-    for _ in range(10):
-        pop.add_sequence(changes=[[1, 2]])
+    change = np.array([[1, 2]])
+    pop = SeqSimEvo.Population(seq, 20)
+    for seq_id in range(10):
+        pop.changes[seq_id] = change
     assert (
         str(pop.consensus_sequence()) == "ATAA"
-    ), "consensus sequence wrong. is {}, should be {}".format(
-        pop.consensus_sequence(), "ATAA"
-    )
+    ), f"consensus sequence wrong. is {pop.consensus_sequence()}, should be ATAA"
 
 
-def test_population_copy_CORRECT():
+def test_population_copy():
     """Test `copy`."""
     seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
     pop = SeqSimEvo.Population(seq, 100)
-
-    for i in range(10):
-        pop.add_sequence(changes=[[i, 2]])
-
     pop_copied = pop.copy()
-
-    for i in range(10):
-        pop_copied.add_sequence(changes=[[i, 3]])
-
-    assert len(pop_copied) != len(pop)
-    assert pop_copied.changes != pop.changes
+    pop_copied.add_change(0, 0, 1)
+    assert pop.changes[0] is None
+    assert pop_copied.changes is not None
 
 
-# delete_sequence
-def test_population_delete_sequence_CORRECT():
-    seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
-    pop = SeqSimEvo.Population(seq, 1)
-
-    id1 = pop.add_sequence(changes=[[2, 2]])
-    id2 = pop.add_sequence(changes=[[3, 3]])
-
-    pop.delete_sequence(id1)
-
-    assert [3, 3] in pop.get_seq(id1), "{}".format(id2)
-    assert pop.n_seq == 2
-
-
-# get_base
-def test_population_get_base_CORRECT():
+def test_population_get_base():
+    """Test get_base."""
     seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
     pop = SeqSimEvo.Population(seq, 100)
 
     assert pop.get_base(0, 1) == 0
 
 
-# get_sample
-def test_population_get_sample_CORRECT():
+def test_population_get_sample():
+    """Test get_sample."""
     seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
     pop = SeqSimEvo.Population(seq, 100)
 
@@ -149,76 +114,72 @@ def test_population_get_sample_CORRECT():
     assert len(set(sample)) == 100, "sample returns double seqIDS when oversampling"
 
 
-# get_seq
 def test_population_get_seq():
+    """Test get_seq."""
     seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
     pop = SeqSimEvo.Population(seq, 100)
 
-    _id = pop.add_sequence(changes=[[5, 2]])
+    pop.add_change(0, 5, 2)
 
-    assert [5, 2] in pop.get_seq(_id)
-    assert pop.get_seq(0) is None
+    assert [5, 2] in pop.get_seq(0)
+    assert pop.get_seq(1) is None
 
     with pytest.raises(Exception):
         pop.get_seq(200)
 
 
-# print_sample
 def test_population_print_sample(capfd):
+    """Test print_sample."""
     seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
-    pop = SeqSimEvo.Population(seq, 100, changes={1: [[5, 2], [3, 1]]}, changed=[1])
+    pop = SeqSimEvo.Population(seq, 100)
+    pop.set_changes(1, [[5, 2], [3, 1]])
 
     pop.print_sample([1])
     out, _ = capfd.readouterr()
 
     assert ("A-5-T\t1" in out) and (
         "A-3-G\t1" in out
-    ), "printed output:\n{}\nis incomplete. should contain A-5-T\t1 and A-3-G\t1".format(
-        out
-    )
-
-    with pytest.raises(Exception):
-        pop.print_sample([200])
+    ), f"printed output:\n{out}\nis incomplete. should contain A-5-T\t1 and A-3-G\t1"
 
 
-# sample_to_string
-def test_population_sample_to_string():
+def test_population_get_summary():
+    """Test get_summary."""
     seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
-    pop = SeqSimEvo.Population(seq, 100, changes={1: [[5, 2], [3, 1]]}, changed=[1])
+    pop = SeqSimEvo.Population(seq, 100)
+    pop.set_changes(1, [[5, 2], [3, 1]])
 
-    string = pop.sample_to_string([1])
+    string = pop.get_summary([1])
     assert ("A-5-T\t1" in string) and (
         "A-3-G\t1" in string
-    ), "returned string:\n{}\nis incomplete. should contain A-5-T\t1 and A-3-G\t1".format(
-        string
-    )
+    ), f"returned string:\n{string}\nis incomplete. should contain A-5-T\t1 and A-3-G\t1"
 
 
-# stats
 def test_population_stats():
+    """Test stats."""
     seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
-    pop = SeqSimEvo.Population(seq, 100, changes={1: [[5, 2], [3, 1]]}, changed=[1])
+    pop = SeqSimEvo.Population(seq, 100)
+    pop.set_changes(1, [[5, 2], [3, 1]])
     for i in range(60):
         pop.add_change(i, 6, 3)
-    pop.add_sequence(changes=[[5, 2], [1, 1]])
 
     statistics = pop.stats()
 
-    assert statistics["n_seq"] == 101, "N_seq statistic wrong"
+    assert statistics["n_seq"] == 100, "N_seq statistic wrong"
     assert statistics["unmutated"] == 40, "number unmutated sequences wrong"
-    assert statistics["total_mutations"] == 64, "total number of mutations is wrong"
-    assert statistics["unique_mutations"] == 4, "number of unique mutations is wrong"
+    assert statistics["total_mutations"] == 62, "total number of mutations is wrong"
+    assert statistics["unique_mutations"] == 3, "number of unique mutations is wrong"
     assert (
         statistics["majority_mutations"] == 1
     ), "number of majority mutations is wrong"
-    assert statistics["max_fraction"] == 60.0 / 101, "maximum fraction is wrong"
+    assert statistics["max_fraction"] == 60.0 / 100, "maximum fraction is wrong"
     assert statistics["GA_rate"] == 0, "fraction G-A is wrong"
 
 
 def test_population_to_fasta():
     """Test `to_fasta`."""
     seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
-    pop = SeqSimEvo.Population(seq, 3, changes={1: [[5, 2], [3, 1]]}, changed=[1])
+    pop = SeqSimEvo.Population(seq, 3)
+    pop.set_changes(1, [[5, 2], [3, 1]])
 
     fasta = ">0\nAAAAAAAAAA\n>1\nAAAGATAAAA\n>2\nAAAAAAAAAA\n"
     assert pop.to_fasta([0, 1, 2]) == fasta, "fasta incorrect"

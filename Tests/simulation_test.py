@@ -1,8 +1,9 @@
 """Simulation module tests."""
 
-from SeqSimEvo.simulation import SimulationSettings
-import pytest
 from copy import deepcopy
+
+import pytest
+import numpy as np
 
 import SeqSimEvo
 
@@ -16,8 +17,9 @@ import SeqSimEvo
 #                                      .new_generation
 #                                      .new_mutations_per_seq
 
-# __init__
+
 def test_simulation_init():
+    """Test init."""
     settings = SeqSimEvo.SimulationSettings.from_preset("HIV")
     seq = SeqSimEvo.Sequence.generate_sequence(100)
     sim = SeqSimEvo.Simulation(seq, settings)
@@ -26,6 +28,7 @@ def test_simulation_init():
 
 
 def test_simulation_get_fitness_effect():
+    """Test get_fitness_effect."""
     settings = SeqSimEvo.SimulationSettings.from_preset("HIV")
     settings.n_seq_init = 3
     seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
@@ -33,29 +36,29 @@ def test_simulation_get_fitness_effect():
 
     assert sim.get_fitness_effect(0, 0) == 1
 
-    with pytest.raises(Exception) as e_info:
-        sim.get_fitness_effect(50, 0) == 1
+    with pytest.raises(Exception):
+        _ = sim.get_fitness_effect(50, 0) == 1
 
-    with pytest.raises(Exception) as e_info:
-        sim.get_fitness_effect(5, 10) == 1
+    with pytest.raises(Exception):
+        _ = sim.get_fitness_effect(5, 10) == 1
 
 
-# copy
 def test_simulation_copy():
+    """Test copy."""
     settings = SeqSimEvo.SimulationSettings.from_preset("HIV")
     settings.n_seq_init = 3
     seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
     sim = SeqSimEvo.Simulation(seq, settings)
 
-    sim_copy = sim.copy("sim_test_copy")
+    sim_copy = sim.copy()
 
     sim.new_generation()
 
     assert sim.gen != sim_copy.gen
 
 
-# get_nr_offspring
 def test_simulation_get_nr_offspring():
+    """Test get_nr_offspring."""
     settings = SeqSimEvo.SimulationSettings.from_preset("HIV")
     settings.n_seq_init = 3
     seq = SeqSimEvo.Sequence(seq="AAAAAAAAAA")
@@ -67,8 +70,8 @@ def test_simulation_get_nr_offspring():
     assert offspring >= 0
 
 
-# mutate_seq
 def test_simulation_mutate_seq():
+    """Test mutate_seq."""
     settings = SeqSimEvo.SimulationSettings.from_preset("HIV")
     settings.n_seq_init = 3
     seq = SeqSimEvo.Sequence(seq="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
@@ -82,16 +85,17 @@ def test_simulation_mutate_seq():
 
 
 def test_simulation_new_generation():
+    """Test new_generation."""
     settings = SeqSimEvo.SimulationSettings.from_preset("HIV")
     settings.n_seq_init = 10000
     settings.mutation_rate = 1e-3
     seq = SeqSimEvo.Sequence.generate_sequence(seq_len=5000)
     sim = SeqSimEvo.Simulation(seq, settings)
-    old_gen = deepcopy(sim.current_population.changes)
+    old_changes = deepcopy(sim.current_population.changes)
 
     sim.new_generation()
 
     assert sim.gen == 1
-    assert (
-        sim.current_population.changes != old_gen
+    assert np.any(
+        sim.current_population != old_changes
     ), "this test can fail by chance. Be worried if it keeps failing."

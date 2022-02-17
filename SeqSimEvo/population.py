@@ -48,7 +48,9 @@ class Population:
     @property
     def changed(self):
         """Get the mutated sequences."""
-        return set(self.changes.keys())
+        return [
+            seq_id for seq_id, change in enumerate(self.changes) if change is not None
+        ]
 
     @classmethod
     def merge(cls, *populations):
@@ -112,48 +114,10 @@ class Population:
             return list(range(self.n_seq))
         return np.random.choice(self.n_seq, size=int(sample_size), replace=False)
 
-    def add_sequence(self, changes: ArrayLike = None):
-        """Add sequence to the population.
-
-        Parameters
-        ----------
-        changes : ArrayLike
-            Array with mutations contained in the sequence.
-
-        Returns
-        -------
-        int
-            Sequence id of the newly added sequence.
-        """
-        self.n_seq += 1
-        if changes is not None:
-            for i in changes:
-                self.add_change(self.n_seq - 1, i[0], i[1])
-        return self.n_seq - 1
-
-    def delete_sequence(self, seq_id: int):
-        """Delete a sequence from the population.
-
-        Sequence ids will be reassigned.
-
-        Parameters
-        ----------
-        seq_id : int
-        """
-        self.n_seq -= 1
-        if self.get_seq(seq_id) is not None:
-            self.changed.remove(seq_id)
-            del self.changes[seq_id]
-
-        if self.get_seq(self.n_seq) is not None:
-            self.changed.remove(self.n_seq)
-            self.changed.add(seq_id)
-
-            self.changes[seq_id] = self.changes[self.n_seq]
-            del self.changes[self.n_seq]
-
     def set_changes(self, seq_id: int, changes: ArrayLike):
         """Set changes for seq_id."""
+        if isinstance(changes, list):
+            changes = np.array(changes)
         self.changes[seq_id] = changes
 
     def add_change(self, seq_id: int, pos: int, target: int):
@@ -215,9 +179,9 @@ class Population:
         """
         stats = {}
         stats["n_seq"] = self.n_seq
-        stats["unmutated"] = self.n_seq - len(self.changes)
+        stats["unmutated"] = self.n_seq - len(self.changed)
         if len(self.changed) > 0:
-            all_mutations = np.vstack(list(self.changes.values()))
+            all_mutations = np.vstack(self.changes[self.changed])
         else:
             all_mutations = []
         stats["total_mutations"] = len(all_mutations)
@@ -286,12 +250,14 @@ class Population:
     def consensus_sequence(self):
         """Compute consensus sequence of the population."""
         seq = deepcopy(self.sequence)
-        all_mutations = np.vstack(list(self.changes.values()))
-        all_mutations = [tuple(row) for row in all_mutations]
+        changes = np.vstack(
+            list(change for change in self.changes if change is not None)
+        )
+        mutations = [tuple(mut) for mut in changes]
 
-        mutations = Counter(all_mutations)
-        for mut in list(mutations.keys()):
-            if mutations[mut] >= self.n_seq / 2.0:
+        mutation_abundances = Counter(mutations)
+        for mut, count in mutation_abundances.items():
+            if count >= self.n_seq / 2.0:
                 seq.sequence[int(mut[0])] = int(mut[1])
         return seq
 
@@ -355,9 +321,9 @@ class Population:
         seq_ids : list
             List of sequences to print a summary of.
         """
-        print(self.print_string(seq_ids))
+        print(self.get_summary(seq_ids))
 
-    def print_string(self, seq_ids: list):
+    def get_summary(self, seq_ids: list):
         """Create a summary of the mutations that have occurred.
 
         Parameters
@@ -372,9 +338,11 @@ class Population:
             `#mutID (from-pos-to)\\tsequence\\tpatient`
         """
         string = "#mutID (from-pos-to)\tsequence\tpatient\n"
+        changed = self.changed
         for i in sorted(seq_ids):
-            if i in self.changed:
-                for pos, base in self.changes[i]:
+            if i in changed:
+                for pos, base_id in self.changes[i]:
+                    base = self.sequence.translation[base_id]
                     string += f"{self.sequence[pos]}-{pos}-{base}\t{i}\n"
         return string
 
@@ -390,4 +358,4 @@ class Population:
         return self.n_seq
 
     def __str__(self):
-        return self.print_string(range(self.n_seq))
+        return self.get_summary(range(self.n_seq))

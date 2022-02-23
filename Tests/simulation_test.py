@@ -70,7 +70,7 @@ def test_simulation_get_nr_offspring():
     assert offspring >= 0
 
 
-def test_simulation_mutate_seq():
+def test_simulation_mutate_sequence():
     """Test mutate_seq."""
     settings = SeqSimEvo.SimulationSettings.from_preset("HIV")
     settings.n_seq_init = 3
@@ -79,8 +79,9 @@ def test_simulation_mutate_seq():
     next_gen = SeqSimEvo.Population(seq, settings.n_seq_init)
 
     sim._future_mutation_counts = iter([3])
-    sim.mutate_seq(next_gen, 0, 0)
+    sim.mutate_sequence(next_gen, 0)
 
+    print(sim.current_population.changed)
     assert next_gen.stats()["total_mutations"] == 3
 
 
@@ -91,11 +92,11 @@ def test_simulation_new_generation():
     settings.mutation_rate = 1e-3
     seq = SeqSimEvo.Sequence.generate_sequence(seq_len=5000)
     sim = SeqSimEvo.Simulation(seq, settings)
-    old_changes = deepcopy(sim.current_population.changes)
+    old_changes = deepcopy(sim.current_population.haplotypes)
 
     sim.new_generation()
 
     assert sim.gen == 1
     assert np.any(
-        sim.current_population != old_changes
+        sim.current_population.haplotypes != old_changes
     ), "this test can fail by chance. Be worried if it keeps failing."

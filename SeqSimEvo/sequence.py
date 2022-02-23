@@ -67,11 +67,11 @@ class Sequence:
         """
         return [self.translation.index(symbol) for symbol in seq]
 
+    def __getitem__(self, key):
+        return self.translation[self.sequence[key]]
+
     def __str__(self):
         return "".join([self.translation[idx] for idx in self.sequence])
 
     def __len__(self):
         return len(self.sequence)
-
-    def __getitem__(self, key):
-        return self.translation[self.sequence[key]]

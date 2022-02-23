@@ -228,12 +228,13 @@ class Simulation:
         """
         return self.fitness_table[target_base, location]
 
-    def get_sequence_fitness(self, sequence_id):
+    def get_sequence_fitness(self, seq_id):
         """Get fitness for sequence."""
-        changes = self.current_population.get_seq(sequence_id)
+        haplotype = self.current_population.get_haplotype(seq_id)
         fitness = 1
 
         # calculate the fitness of the sequence
+        changes = haplotype.changes
         if changes is not None:
             for pos, base in zip(changes[:, 0], changes[:, 1]):
                 fitness *= self.fitness_table[int(base), int(pos)]
@@ -273,54 +274,49 @@ class Simulation:
             )
         return offspring
 
-    def mutate_seq(self, pop, seq_id_new, seq_id_old):
+    def mutate_sequence(self, population: Population, seq_id: int):
         """Mutate a sequence.
 
         Parameters
         ----------
         pop : Population
             Population the sequence mutates in
-        seq_id_new : int
-            Sequence ID of the new sequence
-        seq_id_old : int
-            Sequence ID of the sequence in its ancestor population
-
-        Returns
-        -------
-        Return True if the sequence did mutate and False if it did not.
+        seq_id : int
+            Sequence id to mutate.
         """
         mutation_count = self._get_mutation_count()
 
         if mutation_count <= 0:
             return False
 
+        haplotype = population.get_haplotype(seq_id)
+        new_haplotype = haplotype.copy()
+
         success_mut = 0
         while success_mut < mutation_count:  # do the mutations one by one
-            where = random.randrange(
-                0, len(self.sequence)
-            )  # draw where the mutation will take place
-            base = self.current_population.get_base(seq_id_old, where)
-            rand_nr = random.random()  # draw a random nr for base substitution
+            pos = random.randrange(0, len(self.sequence))
+            base = haplotype.get_base(pos)
 
-            to_check = self.settings.subs_matrix[int(base), :]
-            # get the cumulative distribution of base substitutions
-            new_base = np.where(to_check > rand_nr)[0][0]  # find the new base
+            substitution_vector = self.settings.subs_matrix[int(base), :]
+            new_base = np.where(substitution_vector > random.random())[0][0]
 
-            # only accept the mutation if there was an actual change and make
-            # sure mutations are accepted in line with the G-A increase
-            if base != new_base:
-                if (base == 1) and (new_base == 0):  # G-A mutations
-                    if (self.settings.ga_increase >= 1) or (
-                        random.random() < self.settings["ga_increase"]
-                    ):
-                        pop.add_change(seq_id_new, where, new_base)
-                        success_mut += 1
-                elif (base != 1) or (new_base != 0):  # not G-A mutation
-                    if (self.settings.ga_increase <= 1) or random.random() < (
-                        1.0 / self.settings.ga_increase
-                    ):
-                        pop.add_change(seq_id_new, where, new_base)
-                        success_mut += 1
+            if base == new_base:
+                continue
+
+            if (base == 1) and (new_base == 0):  # G-A mutations
+                if (self.settings.ga_increase >= 1) or (
+                    random.random() < self.settings["ga_increase"]
+                ):
+                    new_haplotype.set_base(pos, new_base)
+                    success_mut += 1
+            elif (base != 1) or (new_base != 0):  # not G-A mutation
+                if (self.settings.ga_increase <= 1) or random.random() < (
+                    1.0 / self.settings.ga_increase
+                ):
+                    new_haplotype.set_base(pos, new_base)
+                    success_mut += 1
+
+        population.set_haplotype(seq_id, new_haplotype)
 
         return True
 
@@ -356,10 +352,10 @@ class Simulation:
         offspring_counter = Counter(offspring)
         new_seq_id = 0
         for seq_id, count in offspring_counter.items():
-            changes = self.current_population.get_seq(seq_id)
+            haplotype = self.current_population.get_haplotype(seq_id)
             for _ in range(count):
-                new_population.set_changes(new_seq_id, changes)
-                self.mutate_seq(new_population, new_seq_id, seq_id)
+                new_population.set_haplotype(new_seq_id, haplotype)
+                self.mutate_sequence(new_population, new_seq_id)
                 new_seq_id += 1
         return new_population
 

@@ -4,13 +4,15 @@ import random
 
 from copy import deepcopy, copy
 from collections import Counter
+from typing import List
 
 import numpy as np
 import scipy as sp
 
-from numpy.typing import ArrayLike
+from numpy.typing import NDArray
 
 from .sequence import Sequence
+from .haplotype import Haplotype
 
 
 class Population:
@@ -22,13 +24,13 @@ class Population:
         Reference sequence
     n_seq : int
         Number of sequences in the population
-    changes : dict
+    haplotypes : ndarray
         Maps sequence ids to an array that stores all mutations
     changed : set
         Sequence ids that contain mutations
     """
 
-    def __init__(self, sequence: Sequence, n_seq: int, changes: dict = None):
+    def __init__(self, sequence: Sequence, n_seq: int, haplotypes: NDArray = None):
         """Initialize the Population
 
         Parameters
@@ -40,16 +42,18 @@ class Population:
         self.sequence = sequence
         self.n_seq = n_seq
 
-        if changes is None:
-            changes = np.empty(n_seq, dtype=object)
+        if haplotypes is None:
+            haplotypes = np.full(n_seq, Haplotype(self.sequence))
 
-        self.changes = changes
+        self.haplotypes = haplotypes
 
     @property
     def changed(self):
         """Get the mutated sequences."""
         return [
-            seq_id for seq_id, change in enumerate(self.changes) if change is not None
+            seq_id
+            for seq_id, haplotype in enumerate(self.haplotypes)
+            if haplotype.changes is not None
         ]
 
     @classmethod
@@ -63,19 +67,16 @@ class Population:
         new_population = cls(sequence, n_seq)
         seq_id = 0
         for population in populations:
-            new_population.changes[
+            new_population.haplotypes[
                 seq_id : seq_id + len(population)
-            ] = population.changes[:]
+            ] = population.haplotypes[:]
             seq_id += len(population)
         return new_population
 
     def __add__(self, other):
         if self.sequence != other.sequence:
             raise ValueError("Can only add Populations with same reference sequence.")
-        population = copy(self)
-        for seq_id in range(other.n_seq):
-            population.add_sequence(other.get_seq(seq_id))
-        return population
+        return Population.merge(self, other)
 
     def split(self, ratios: list):
         """Split Population into segments."""
@@ -89,13 +90,29 @@ class Population:
         populations = []
         for size in sizes:
             population = Population(
-                self.sequence, size, changes=self.changes[seq_id : seq_id + size]
+                self.sequence, size, haplotypes=self.haplotypes[seq_id : seq_id + size]
             )
             seq_id += size
             populations.append(population)
         return populations
 
-    def get_sample(self, sample_size: int):
+    def get_haplotype(self, seq_id: int) -> Haplotype:
+        """Get changes for sequence."""
+        if seq_id < 0 or seq_id >= self.n_seq:
+            raise IndexError(f"Sequence id {seq_id} out of range.")
+        return self.haplotypes[seq_id]
+
+    def get_base(self, seq_id: int, pos: int):
+        """Get specific base for a sequence.
+
+        Parameters
+        ----------
+        seq_id : int
+        pos : int
+        """
+        return self.haplotypes[seq_id].get_base(pos)
+
+    def get_sample(self, sample_size: int) -> List[int]:
         """Get a random sample of the population.
 
         If the sample size is larger than the population, the whole population
@@ -114,11 +131,9 @@ class Population:
             return list(range(self.n_seq))
         return np.random.choice(self.n_seq, size=int(sample_size), replace=False)
 
-    def set_changes(self, seq_id: int, changes: ArrayLike):
-        """Set changes for seq_id."""
-        if isinstance(changes, list):
-            changes = np.array(changes)
-        self.changes[seq_id] = changes
+    def set_haplotype(self, seq_id: int, haplotype: Haplotype):
+        """Set haplotype for seq_id."""
+        self.haplotypes[seq_id] = haplotype
 
     def add_change(self, seq_id: int, pos: int, target: int):
         """Add a change to an existing sequence.
@@ -137,33 +152,11 @@ class Population:
         if seq_id > self.n_seq:
             raise IndexError(f"{seq_id=} is not in the population.")
 
-        changes = self.changes[seq_id]
+        haplotype = self.haplotypes[seq_id].copy()
+        haplotype.set_base(pos, target)
+        self.haplotypes[seq_id] = haplotype
 
-        if changes is None:
-            self.changes[seq_id] = np.array([[pos, target]])
-            return
-
-        if pos in changes[:, 0]:
-            changes = copy(changes)
-            changes[self.changes[seq_id][:, 0] == pos, 1] = target
-            self.changes[seq_id] = changes
-        else:
-            self.changes[seq_id] = np.vstack((changes, [pos, target]))
-
-    def get_base(self, seq_id: int, pos: int):
-        """Get specific base for a sequence.
-
-        Parameters
-        ----------
-        seq_id : int
-        pos : int
-        """
-        changes = self.changes[seq_id]
-        if changes is not None and pos in self.changes[seq_id][:, 0]:
-            return self.changes[seq_id][self.changes[seq_id][:, 0] == pos, 1]
-        return self.sequence.sequence[pos]
-
-    def stats(self):
+    def stats(self) -> dict:
         """Get stats for the population.
 
         Returns
@@ -180,8 +173,11 @@ class Population:
         stats = {}
         stats["n_seq"] = self.n_seq
         stats["unmutated"] = self.n_seq - len(self.changed)
+        print(f"{len(self.changed)}")
         if len(self.changed) > 0:
-            all_mutations = np.vstack(self.changes[self.changed])
+            all_mutations = np.vstack(
+                list(haplotype.changes for haplotype in self.haplotypes[self.changed])
+            )
         else:
             all_mutations = []
         stats["total_mutations"] = len(all_mutations)
@@ -208,7 +204,12 @@ class Population:
             stats["GA_rate"] = None
         return stats
 
-    def to_fasta(self, seq_ids=None, n_seq=None, description=""):
+    def to_fasta(
+        self,
+        seq_ids: List[int] = None,
+        n_seq: int = None,
+        description: str = "",
+    ) -> str:
         """Convert (part of) the population to fasta-format.
 
         Without any arguments, all sequences in the population will be returned.
@@ -239,19 +240,18 @@ class Population:
 
         for seq_id in seq_ids:
             string += ">" + str(seq_id) + "" + str(description) + "\n"
-            changed_here = self.get_seq(seq_id)
-            seq = deepcopy(self.sequence)
-            if changed_here is not None:
-                for pos, base in changed_here:
-                    seq.sequence[int(pos)] = int(base)
-            string += str(seq) + "\n"
+            string += str(self.get_haplotype(seq_id).get_sequence()) + "\n"
         return string
 
-    def consensus_sequence(self):
+    def consensus_sequence(self) -> Sequence:
         """Compute consensus sequence of the population."""
         seq = deepcopy(self.sequence)
         changes = np.vstack(
-            list(change for change in self.changes if change is not None)
+            list(
+                haplotype.changes
+                for haplotype in self.haplotypes
+                if haplotype.changes is not None
+            )
         )
         mutations = [tuple(mut) for mut in changes]
 
@@ -260,18 +260,6 @@ class Population:
             if count >= self.n_seq / 2.0:
                 seq.sequence[int(mut[0])] = int(mut[1])
         return seq
-
-    def get_seq(self, sequence_id):
-        """Get the changes in the sequence with id sequence_id
-
-        Raises
-        ------
-        `IndexError`: When sequence_id is out of bounds
-        """
-        if sequence_id > self.n_seq:
-            raise IndexError("sequence_id is out of bounds")
-
-        return self.changes[sequence_id]
 
     def hamming_distance(self, sample, simulation_settings, action="mean"):
         """Calculate the inter-sequence hamming distances in a sample.
@@ -284,13 +272,13 @@ class Population:
         HDs = []
         for i in sample:
             if i in self.changed:
-                changed1 = [str(k) for k in self.changes[i]]
+                changed1 = [str(k) for k in self.haplotypes[i].changes]
             else:
                 changed1 = []
             for j in sample:
                 if i != j:
                     if j in self.changed:
-                        changed2 = [str(k) for k in self.changes[j]]
+                        changed2 = [str(k) for k in self.haplotypes[j].changes]
                     else:
                         changed2 = []
                     HDs.append(len(set(list(changed1)) ^ set(list(changed2))))
@@ -341,7 +329,7 @@ class Population:
         changed = self.changed
         for i in sorted(seq_ids):
             if i in changed:
-                for pos, base_id in self.changes[i]:
+                for pos, base_id in self.haplotypes[i].changes:
                     base = self.sequence.translation[base_id]
                     string += f"{self.sequence[pos]}-{pos}-{base}\t{i}\n"
         return string
@@ -351,7 +339,7 @@ class Population:
         return Population(
             sequence=self.sequence,
             n_seq=self.n_seq,
-            changes=deepcopy(self.changes),
+            haplotypes=deepcopy(self.haplotypes),
         )
 
     def __len__(self):

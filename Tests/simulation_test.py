@@ -81,7 +81,6 @@ def test_simulation_mutate_sequence():
     sim._future_mutation_counts = iter([3])
     sim.mutate_sequence(next_gen, 0)
 
-    print(sim.current_population.changed)
     assert next_gen.stats()["total_mutations"] == 3
 
 
@@ -92,11 +91,11 @@ def test_simulation_new_generation():
     settings.mutation_rate = 1e-3
     seq = SeqSimEvo.Sequence.generate_sequence(seq_len=5000)
     sim = SeqSimEvo.Simulation(seq, settings)
-    old_changes = deepcopy(sim.current_population.haplotypes)
+    old_changes = deepcopy(sim.population.haplotypes)
 
     sim.new_generation()
 
     assert sim.gen == 1
     assert np.any(
-        sim.current_population.haplotypes != old_changes
+        sim.population.haplotypes != old_changes
     ), "this test can fail by chance. Be worried if it keeps failing."

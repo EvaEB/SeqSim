@@ -60,23 +60,19 @@ class Simulation:
 
         self.gen = 0
 
-        self.current_population = Population(
-            self.sequence, int(self.settings.n_seq_init)
-        )
+        self.population = Population(self.sequence, int(self.settings.n_seq_init))
 
         self._future_mutation_counts = None
 
     @property
     def effective_population(self):
         """Effective population size."""
-        return len(self.current_population)
+        return len(self.population)
 
     @property
     def fitnesses(self):
         """Fitnesses of the current population."""
-        return [
-            self.get_sequence_fitness(i) for i in range(len(self.current_population))
-        ]
+        return [self.get_sequence_fitness(i) for i in range(len(self.population))]
 
     @property
     def average_fitness(self):
@@ -86,7 +82,7 @@ class Simulation:
     @property
     def n_seq(self):
         """Current number of sequences in population."""
-        return len(self.current_population)
+        return len(self.population)
 
     @classmethod
     def create_fitness_table(cls, sequence: Sequence, settings: SimulationSettings):
@@ -235,7 +231,7 @@ class Simulation:
 
     def get_sequence_fitness(self, seq_id):
         """Get fitness for sequence."""
-        haplotype = self.current_population.get_haplotype(seq_id)
+        haplotype = self.population.get_haplotype(seq_id)
         fitness = 1
 
         # calculate the fitness of the sequence
@@ -341,7 +337,7 @@ class Simulation:
             return [i for i, j in enumerate(weights) for k in range(j)]
 
         sample = np.random.choice(
-            list(range(self.current_population.n_seq)),
+            list(range(self.population.n_seq)),
             size=int(target_size * factor),
             p=np.array(weights, dtype=float) / sum(weights),
         )
@@ -357,7 +353,7 @@ class Simulation:
         offspring_counter = Counter(offspring)
         new_seq_id = 0
         for seq_id, count in offspring_counter.items():
-            haplotype = self.current_population.get_haplotype(seq_id)
+            haplotype = self.population.get_haplotype(seq_id)
             for _ in range(count):
                 new_population.set_haplotype(new_seq_id, haplotype)
                 self.mutate_sequence(new_population, new_seq_id)
@@ -383,9 +379,9 @@ class Simulation:
         offspring = self.subsample_population(weights)
 
         self.gen += 1
-        self.current_population = self.population_from_offspring(offspring)
+        self.population = self.population_from_offspring(offspring)
 
-        return self.current_population
+        return self.population
 
     def _get_mutation_count(self):
         """Get a mutation count.
@@ -414,7 +410,7 @@ class Simulation:
             string += f"{parameter}\t{value}\n"
         string += f"ancestor\t{str(self.sequence)}\n"
         string += f"number of generations\t{str(self.gen)}\n"
-        stats = self.current_population.stats()
+        stats = self.population.stats()
         for stat, value in stats.items():
             string += f"{stat}\t{value}\n"
         return string
@@ -438,17 +434,14 @@ class Simulation:
                 fitness_table=self.fitness_table,
                 **kwargs,
             )
-        new_simulation = Simulation(
+        sample = self.population.get_sample(n_seq)
+        simulation = Simulation(
             self.sequence,
-            deepcopy(self.settings),
+            self.settings,
             fitness_table=self.fitness_table,
-            n_seq_init=n_seq,
-            **kwargs,
+            name=self.name,
         )
-        sample = self.current_population.get_sample(n_seq)
-        for i, s in enumerate(sample):
-            changes = self.current_population.get_seq(s)
-            if changes is not None:
-                for c in changes:
-                    new_simulation.current_population.add_change(i, c[0], c[1])
-        return new_simulation
+        simulation.population = Population(
+            self.sequence, len(sample), haplotypes=sample
+        )
+        return simulation

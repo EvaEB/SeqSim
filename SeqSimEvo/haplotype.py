@@ -62,7 +62,7 @@ class Haplotype:
 
     def copy(self):
         """Copy haplotype."""
-        return Haplotype(self.sequence, copy(self.changes))
+        return Haplotype(self.sequence, deepcopy(self.changes))
 
     def __getitem__(self, key):
         return self.get_base(key)

@@ -2,7 +2,7 @@
 
 import random
 
-from copy import deepcopy, copy
+from copy import deepcopy
 from collections import Counter
 from typing import List
 
@@ -173,7 +173,6 @@ class Population:
         stats = {}
         stats["n_seq"] = self.n_seq
         stats["unmutated"] = self.n_seq - len(self.changed)
-        print(f"{len(self.changed)}")
         if len(self.changed) > 0:
             all_mutations = np.vstack(
                 list(haplotype.changes for haplotype in self.haplotypes[self.changed])

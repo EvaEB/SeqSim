@@ -41,7 +41,7 @@ class Simulation:
         simulation_settings: SimulationSettings,
         fitness_table: ArrayLike = None,
         name: str = "SeqSim",
-        **kwargs,
+        **_kwargs,
     ):
         """Create a Simulation object.
 
@@ -88,8 +88,13 @@ class Simulation:
         """Current number of sequences in population."""
         return len(self.current_population)
 
+    @classmethod
+    def create_fitness_table(cls, sequence: Sequence, settings: SimulationSettings):
+        """Create a fitness table."""
+        return cls(sequence, settings).fitness_table
+
     def get_fitness_table(self):
-        """Creates a table with random fitness.
+        """Create a table with random fitness.
 
         Initiate an array with random fitness values according to the model and
         parameters set in settings.

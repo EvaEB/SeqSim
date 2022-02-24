@@ -16,8 +16,14 @@ def main(args):
         args.preset, dilution=args.dilution
     )
     sequence = Sequence.generate_sequence(simulation_settings.seq_len)
+    fitness_table = Simulation.create_fitness_table(sequence, simulation_settings)
     compartments = [
-        Simulation(sequence, simulation_settings, name=compartment)
+        Simulation(
+            sequence,
+            simulation_settings,
+            fitness_table=fitness_table,
+            name=compartment,
+        )
         for compartment in range(args.n_compartments)
     ]
     plan = pd.read_csv(args.passage_plan)

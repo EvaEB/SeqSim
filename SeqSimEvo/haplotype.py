@@ -16,6 +16,11 @@ class Haplotype:
         self.sequence = sequence
         self.changes = changes
 
+    @property
+    def mutation_count(self):
+        """Get number of mutations."""
+        return len(self.changes)
+
     def get_base(self, pos: int):
         """Get specific base for a sequence.
 

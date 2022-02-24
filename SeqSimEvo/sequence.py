@@ -15,7 +15,7 @@ class Sequence:
         A string representation of the sequence
     """
 
-    def __init__(self, seq: list, **kwargs):
+    def __init__(self, seq: list):
         """Create a sequence object.
 
         Parameters
